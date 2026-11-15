@@ -1,0 +1,7 @@
+/target/
+/Frameworks/libyaoguang_core.dylib
+/com.apple.DeveloperTools/
+/Yaoguang.xcodeproj/xcuserdata/
+/Yaoguang.xcodeproj/project.xcworkspace/xcuserdata/
+/build/
+.DS_Store

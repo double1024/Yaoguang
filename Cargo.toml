@@ -1,0 +1,15 @@
+[package]
+name = "yaoguang-core"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "yaoguang_core"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+librtlsdr-rs = "0.3"
+rs1090 = "0.7.0"
+
+[patch.crates-io]
+librtlsdr-rs = { path = "vendor/librtlsdr-rs" }
