@@ -102,58 +102,89 @@ struct FlightListView: View {
 
     // MARK: - 默认航班资料（未收到 ADS-B 数据时展示）
 
+    /// 以表格行展示默认航班；缺失字段一律显示 "-"。
     private var defaultProfileView: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
+        VStack(spacing: 0) {
+            HStack(spacing: 6) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
-                    .foregroundStyle(.secondary)
-                Text("Waiting for ADS-B — showing the default flight")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                Text("Waiting for ADS-B — showing default flight \(DefaultFlightProfile.flightNumber)")
+                Spacer(minLength: 0)
             }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
 
-            HStack(spacing: 16) {
-                Text("\(DefaultFlightProfile.originIATA) → \(DefaultFlightProfile.destinationIATA)")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
-                Text("\(DefaultFlightProfile.airlineNameLocalized) \(DefaultFlightProfile.flightNumber)")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.secondary)
+            Table(of: DefaultProfileRow.self) {
+                TableColumn(columnTitle("Callsign")) { row in
+                    HStack(spacing: 6) {
+                        AirlineLogoView(callsign: DefaultFlightProfile.callsignICAO)
+                        Text(row.callsign)
+                            .font(.system(size: 13, weight: .bold))
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .width(min: 90, ideal: 112, max: 132)
+
+                TableColumn(columnTitle("Route")) { row in
+                    Text(row.route)
+                        .font(.system(size: 12))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .width(min: 110, ideal: 140, max: 170)
+
+                TableColumn(columnTitle("ICAO")) { row in
+                    Text(row.icao)
+                        .font(.system(size: 12))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                .width(min: 58, ideal: 64, max: 72)
+
+                TableColumn(columnTitle("GS", unit: "(kt)")) { row in
+                    numberCell(row.groundSpeed)
+                }
+                .width(min: 58, ideal: 66, max: 74)
+                .alignment(.trailing)
+
+                TableColumn(columnTitle("TRK")) { row in
+                    numberCell(row.track)
+                }
+                .width(min: 46, ideal: 52, max: 60)
+                .alignment(.trailing)
+
+                TableColumn(columnTitle("ALT", unit: "(FL)")) { row in
+                    numberCell(row.altitude)
+                }
+                .width(min: 60, ideal: 68, max: 76)
+                .alignment(.trailing)
+
+                TableColumn(columnTitle("V/S", unit: "(m/s)")) { row in
+                    numberCell(row.verticalRate)
+                }
+                .width(min: 62, ideal: 70, max: 78)
+                .alignment(.trailing)
+
+                TableColumn(columnTitle("SIG", unit: "(dBFS)")) { row in
+                    numberCell(row.signal)
+                }
+                .width(min: 64, ideal: 72, max: 80)
+                .alignment(.trailing)
+
+                TableColumn(columnTitle("RX", unit: "(Age)")) { row in
+                    numberCell(row.rx)
+                }
+                .width(min: 80, ideal: 88, max: 98)
+                .alignment(.trailing)
+            } rows: {
+                TableRow(DefaultProfileRow.current)
             }
+            .tableStyle(.inset)
 
-            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) {
-                GridRow {
-                    profileField("出发机场", "\(DefaultFlightProfile.originNameLocalized)（\(DefaultFlightProfile.originICAO) / \(DefaultFlightProfile.originIATA)）")
-                    profileField("到达机场", "\(DefaultFlightProfile.destinationNameLocalized)（同场环飞）")
-                }
-                GridRow {
-                    profileField("航班日期", DefaultFlightProfile.flightDate)
-                    profileField("执飞机型", "\(DefaultFlightProfile.aircraftType)（\(DefaultFlightProfile.aircraftTypeShort)）")
-                }
-                GridRow {
-                    profileField("计划时间", "\(DefaultFlightProfile.scheduledDeparture) → \(DefaultFlightProfile.scheduledArrival)")
-                    profileField("实际时间", "\(DefaultFlightProfile.actualDeparture) → \(DefaultFlightProfile.actualArrival)")
-                }
-                GridRow {
-                    profileField("飞行时长", DefaultFlightProfile.duration)
-                    profileField("巡航高度", "\(DefaultFlightProfile.cruiseAltitudeFt) ft")
-                }
-                GridRow {
-                    profileField("注册号", "\(DefaultFlightProfile.registration)（\(DefaultFlightProfile.aircraftName)）")
-                    profileField("降落跑道", DefaultFlightProfile.landingRunway)
-                }
-            }
-            .font(.system(size: 12))
-        }
-        .padding(24)
-    }
-
-    private func profileField(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-            Text(value)
-                .font(.system(size: 12))
+            Spacer(minLength: 0)
         }
     }
 
@@ -324,4 +355,32 @@ private struct AirlineLogoView: View {
 private struct CallsignTarget: Identifiable {
     let callsign: String
     var id: String { callsign }
+}
+
+/// 默认资料的表格行。缺失字段用 "-"。
+private struct DefaultProfileRow: Identifiable {
+    let id = UUID()
+    let callsign: String
+    let route: String
+    let icao: String
+    let groundSpeed: String?
+    let track: String?
+    let altitude: String?
+    let verticalRate: String?
+    let signal: String?
+    let rx: String?
+
+    static var current: DefaultProfileRow {
+        DefaultProfileRow(
+            callsign: DefaultFlightProfile.callsignICAO,
+            route: "\(DefaultFlightProfile.originIATA) → \(DefaultFlightProfile.destinationIATA)",
+            icao: "-",
+            groundSpeed: nil,
+            track: nil,
+            altitude: nil,
+            verticalRate: nil,
+            signal: nil,
+            rx: nil
+        )
+    }
 }
