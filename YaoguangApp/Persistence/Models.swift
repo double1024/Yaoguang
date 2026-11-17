@@ -261,11 +261,26 @@ enum WidgetSharedStorage {
         containerURL()?.appendingPathComponent(fileName, isDirectory: false)
     }
 
-    static func save(_ snapshot: WidgetFlightSnapshot) {
-        guard let url = snapshotURL() else { return }
+    /// 写入快照。返回是否真正落盘，便于界面显示真实结果。
+    @discardableResult
+    static func save(_ snapshot: WidgetFlightSnapshot) -> Bool {
+        guard let url = snapshotURL() else {
+            print("[widget] App Group 容器不可用（group.com.yaoguang.app）")
+            return false
+        }
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
-        guard let data = try? encoder.encode(snapshot) else { return }
-        try? data.write(to: url, options: .atomic)
+        guard let data = try? encoder.encode(snapshot) else {
+            print("[widget] 编码快照失败")
+            return false
+        }
+        do {
+            try data.write(to: url, options: .atomic)
+            print("[widget] 已写入 \(url.path)")
+            return true
+        } catch {
+            print("[widget] 写入失败：\(error)")
+            return false
+        }
     }
 }

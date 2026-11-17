@@ -312,7 +312,7 @@ final class ReceiverModel: ObservableObject {
         lastWidgetKey = key
         lastWidgetWrite = Date()
 
-        WidgetSharedStorage.save(WidgetFlightSnapshot(
+        let saved = WidgetSharedStorage.save(WidgetFlightSnapshot(
             writtenAt: Date(),
             origin: origin ?? "-",
             destination: destination ?? "-",
@@ -321,9 +321,12 @@ final class ReceiverModel: ObservableObject {
             aircraftType: aircraftType,
             airlineLogoData: logoData
         ))
-        WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
-        widgetStatus = "widget: 已更新 \(callsign)"
-        print("[widget] snapshot written: \(callsign) \(origin ?? "-")->\(destination ?? "-") type=\(aircraftType ?? "-")")
+        if saved {
+            WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
+            widgetStatus = "widget: 已更新 \(callsign)"
+        } else {
+            widgetStatus = "widget: 写入失败（App Group 不可用）"
+        }
     }
 
     /// 从呼号取三字 ICAO 航司码（如 "HKE1800" → "HKE"）。
