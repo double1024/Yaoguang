@@ -325,7 +325,7 @@ final class ReceiverModel: ObservableObject {
             WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
             widgetStatus = "widget: 已更新 \(callsign)"
         } else {
-            widgetStatus = "widget: 写入失败（App Group 不可用）"
+            widgetStatus = "widget: 写入失败"
         }
     }
 

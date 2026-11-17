@@ -250,22 +250,27 @@ struct WidgetFlightSnapshot: Codable, Equatable {
 }
 
 enum WidgetSharedStorage {
-    static let appGroupIdentifier = "group.com.yaoguang.app"
     static let fileName = "widget-flight.json"
+    static let directoryName = "Yaoguang"
 
-    static func containerURL() -> URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
-    }
-
+    /// 主程序与小组件共享的目录：~/Library/Application Support/Yaoguang/
+    /// 不使用 App Group（免费开发者账号不支持），改为直接共享文件。
     static func snapshotURL() -> URL? {
-        containerURL()?.appendingPathComponent(fileName, isDirectory: false)
+        let fm = FileManager.default
+        guard let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                           appropriateFor: nil, create: true) else {
+            return nil
+        }
+        let root = appSupport.appendingPathComponent(directoryName, isDirectory: true)
+        try? fm.createDirectory(at: root, withIntermediateDirectories: true)
+        return root.appendingPathComponent(fileName, isDirectory: false)
     }
 
     /// 写入快照。返回是否真正落盘，便于界面显示真实结果。
     @discardableResult
     static func save(_ snapshot: WidgetFlightSnapshot) -> Bool {
         guard let url = snapshotURL() else {
-            print("[widget] App Group 容器不可用（group.com.yaoguang.app）")
+            print("[widget] 共享目录不可用")
             return false
         }
         let encoder = JSONEncoder()
