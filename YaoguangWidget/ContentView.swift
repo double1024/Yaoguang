@@ -24,10 +24,7 @@ struct ContentView: View {
                       : Color.white.opacity(0.16))
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 21.67, style: .continuous))
 
-            // 2. barcode 装饰条（登机牌风格，居中）
-            barcodeBand
-
-            // 3. 内容
+            // 2. 内容
             VStack(spacing: 0) {
                 header
                 Spacer(minLength: 0)
@@ -37,6 +34,9 @@ struct ContentView: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
+
+            // 3. barcode 装饰条：置于最上层，使用原图自带透明度。
+            barcodeBand
         }
         .frame(width: 329, height: 155)
         .clipShape(RoundedRectangle(cornerRadius: 21.67, style: .continuous))
@@ -44,17 +44,15 @@ struct ContentView: View {
 
     // MARK: - barcode 条
 
-    /// 原始 barcode_bg.png 的 alpha 只有 13（约 5%），几乎不可见，
-    /// 因此使用提亮版 barcode_bg_visible.png，并用 opacity 控制最终强度。
+    /// 使用原始 barcode_bg.png，保留图片自带的 alpha（不做额外 opacity 调整），
+    /// 叠在所有内容之上。
     @ViewBuilder
     private var barcodeBand: some View {
-        if let image = Self.bundleImage(named: "barcode_bg_visible") {
+        if let image = Self.bundleImage(named: "barcode_bg") {
             Image(nsImage: image)
                 .resizable()
                 .frame(width: 329, height: 64)
                 .frame(maxHeight: .infinity, alignment: .center)
-                .opacity(colorScheme == .dark ? 0.22 : 0.28)
-                .blendMode(colorScheme == .dark ? .screen : .multiply)
                 .allowsHitTesting(false)
         }
     }
@@ -113,6 +111,8 @@ struct ContentView: View {
                     .lineLimit(1)
             }
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 

@@ -236,7 +236,7 @@ struct AircraftInfo: Sendable, Equatable {
 
 /// 主应用写入、WidgetKit 扩展读取的快照。扩展是独立进程，无法访问 SwiftData。
 struct WidgetFlightSnapshot: Codable, Equatable {
-    static let schemaVersion = 2
+    static let schemaVersion = 3
 
     var version: Int = WidgetFlightSnapshot.schemaVersion
     var writtenAt: Date
@@ -245,6 +245,8 @@ struct WidgetFlightSnapshot: Codable, Equatable {
     var airlineName: String?
     var flightNumber: String?
     var aircraftType: String?
+    /// 飞机制造商（如 Airbus）。
+    var manufacturer: String?
     /// 航司 logo 的 PNG 数据（主应用从 flightaware_logos 读取后嵌入）。
     var airlineLogoData: Data?
 }

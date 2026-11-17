@@ -5,7 +5,7 @@ import Foundation
 /// 扩展是独立进程，不能直接访问主应用的 SwiftData 存储；主应用把最新一架飞机
 /// 的展示字段（含航司 logo 的 PNG 数据）写成 JSON，扩展按需读取。
 struct WidgetFlightSnapshot: Codable, Equatable {
-    static let schemaVersion = 2
+    static let schemaVersion = 3
 
     var version: Int = WidgetFlightSnapshot.schemaVersion
     var writtenAt: Date
@@ -14,16 +14,21 @@ struct WidgetFlightSnapshot: Codable, Equatable {
     var airlineName: String?
     var flightNumber: String?
     var aircraftType: String?
+    /// 飞机制造商（如 Airbus）。
+    var manufacturer: String?
     /// 航司 logo 的 PNG 数据（由主应用从 flightaware_logos 读取后嵌入）。
     var airlineLogoData: Data?
 
     var cardData: FlightCardData {
-        FlightCardData(
+        let aircraftName = [normalized(manufacturer), normalized(aircraftType)]
+            .compactMap { $0 }
+            .joined(separator: " ")
+        return FlightCardData(
             origin: normalized(origin) ?? "-",
             destination: normalized(destination) ?? "-",
             airlineName: normalized(airlineName),
-            flightNumberText: normalized(flightNumber).map { "Flight \($0)" },
-            aircraftText: normalized(aircraftType).map { $0 },
+            flightNumberText: normalized(flightNumber).map { "Flight No. \($0)" },
+            aircraftText: aircraftName.isEmpty ? nil : "Aircraft: \(aircraftName)",
             airlineLogoData: airlineLogoData
         )
     }
@@ -51,13 +56,13 @@ enum WidgetSharedStorage {
             .appendingPathComponent(fileName, isDirectory: false)
     }
 
-    /// 读取快照。只接受当前 schema 版本；旧版本文件视为无数据（避免显示过期格式）。
+    /// 读取快照。
+    /// 不校验 version：新增字段都是可选的，旧文件解码后缺失字段为 nil，
+    /// 这样调整字段不会让已有数据整份失效。
     static func load() -> WidgetFlightSnapshot? {
         guard let url = snapshotURL(), let data = try? Data(contentsOf: url) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
-        guard let snapshot = try? decoder.decode(WidgetFlightSnapshot.self, from: data),
-              snapshot.version == WidgetFlightSnapshot.schemaVersion else { return nil }
-        return snapshot
+        return try? decoder.decode(WidgetFlightSnapshot.self, from: data)
     }
 }

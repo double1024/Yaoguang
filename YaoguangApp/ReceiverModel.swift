@@ -307,6 +307,14 @@ final class ReceiverModel: ObservableObject {
         }
 
         func route(_ row: LiveAircraft) -> RouteInfo? { resolver.routes[trimmedCallsign(row)] }
+        // 航班号优先用 adsbdb 的 IATA 呼号（如 AC334），缺失时回退 ICAO 呼号。
+        func flightNumber(_ row: LiveAircraft) -> String {
+            if let iata = route(row)?.callsignIATA?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !iata.isEmpty {
+                return iata.uppercased()
+            }
+            return trimmedCallsign(row)
+        }
         func hasRoute(_ row: LiveAircraft) -> Bool {
             guard let route = route(row) else { return false }
             return route.origin != nil && route.destination != nil
@@ -325,6 +333,7 @@ final class ReceiverModel: ObservableObject {
         let destination: String?
         let airline: String?
         let aircraftType: String?
+        let manufacturer: String?
         let designator: String?
 
         if chosen.isDefault {
@@ -333,20 +342,22 @@ final class ReceiverModel: ObservableObject {
             destination = DefaultFlightProfile.destinationIATA
             airline = DefaultFlightProfile.airlineName
             aircraftType = DefaultFlightProfile.aircraftTypeShort
+            manufacturer = DefaultFlightProfile.manufacturer
             designator = DefaultFlightProfile.airlineICAO
         } else {
-            callsign = trimmedCallsign(chosen)
+            callsign = flightNumber(chosen)
             let routeInfo = route(chosen)
             origin = routeInfo?.origin?.iataCode ?? routeInfo?.origin?.icaoCode
             destination = routeInfo?.destination?.iataCode ?? routeInfo?.destination?.icaoCode
             airline = routeInfo?.airline?.name
             let info = resolver.aircraftInfo[Self.hexString(chosen.icao24)]
             aircraftType = info?.aircraftType ?? info?.icaoType
+            manufacturer = info?.manufacturer
             designator = routeInfo?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
         }
 
         let logoData = Self.airlineLogoData(designator: designator)
-        let key = [callsign, origin, destination, airline, aircraftType]
+        let key = [callsign, origin, destination, airline, aircraftType, manufacturer]
             .map { $0 ?? "" }.joined(separator: "|")
         guard key != lastWidgetKey || Date().timeIntervalSince(lastWidgetWrite) >= 5 else { return }
         lastWidgetKey = key
@@ -359,6 +370,7 @@ final class ReceiverModel: ObservableObject {
             airlineName: airline,
             flightNumber: callsign,
             aircraftType: aircraftType,
+            manufacturer: manufacturer,
             airlineLogoData: logoData
         ))
         if let saveError {

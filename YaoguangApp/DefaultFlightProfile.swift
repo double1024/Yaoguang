@@ -32,7 +32,8 @@ enum DefaultFlightProfile {
     static let duration = "1 小时 11 分钟"
     static let cruiseAltitudeFt = 25_000
 
-    static let aircraftType = "Airbus A320-271N"
+    static let manufacturer = "Airbus"
+    static let aircraftType = "A320neo"
     static let aircraftTypeShort = "A320neo"
     static let registration = "B-LCR"
     static let aircraftName = "紫菜 / Nori"
