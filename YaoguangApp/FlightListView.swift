@@ -199,11 +199,9 @@ struct FlightListView: View {
     // MARK: - 单元格
 
     private func columnTitle(_ title: String, unit: String? = nil) -> Text {
-        let main = Text(title).font(.system(size: 11, weight: .semibold))
-        guard let unit else { return main }
-        return main + Text(" \(unit)")
-            .font(.system(size: 9))
-            .foregroundColor(.secondary)
+        let text = unit.map { "\(title) \($0)" } ?? title
+        return Text(text)
+            .font(.system(size: 11, weight: .semibold))
     }
 
     private func callsignCell(_ aircraft: LiveAircraft) -> some View {
