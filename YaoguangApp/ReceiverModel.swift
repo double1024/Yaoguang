@@ -287,6 +287,12 @@ final class ReceiverModel: ObservableObject {
             return
         }
 
+        // 明确区分「App Group 不可用」与「还没解析出航线」。
+        guard WidgetSharedStorage.containerURL() != nil else {
+            widgetStatus = "widget: App Group 不可用"
+            return
+        }
+
         let route = resolver.routes[callsign]
         let info = resolver.aircraftInfo[Self.hexString(latest.icao24)]
 
@@ -296,12 +302,8 @@ final class ReceiverModel: ObservableObject {
         let flightNumber = callsign
         let aircraftType = info?.aircraftType ?? info?.icaoType
 
-        // 只要拿到呼号，并且航线或机型任一项已解析，就更新小组件；
-        // 缺失的航线用 "-" 占位，避免一直卡在等待航线。
-        guard origin != nil || destination != nil || aircraftType != nil else {
-            widgetStatus = "widget: 等待航线/机型（\(callsign)）"
-            return
-        }
+        // 只要有呼号就更新小组件；航线/机型缺失时用 "-" 占位。
+        // 例：HKE1800 在 adsbdb 无航线记录（404），旧逻辑会永远卡住。
 
         let designator = route?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
         let logoData = Self.airlineLogoData(designator: designator)
