@@ -1,6 +1,6 @@
 // Edit this file to change the app's user-visible version, build number, or copyright.
-APP_VERSION = 2.1.0
-APP_BUILD = 8
+APP_VERSION = 2.2.0
+APP_BUILD = 18
 APP_COPYRIGHT = Copyright © 2026 Ryan Channon. All rights reserved.
 
 MARKETING_VERSION = $(APP_VERSION)

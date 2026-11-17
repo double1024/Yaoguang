@@ -24,19 +24,23 @@ struct ContentView: View {
                       : Color.white.opacity(0.16))
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 21.67, style: .continuous))
 
-            // 2. 内容
+            // 2. 头部与底部（不含航线）
             VStack(spacing: 0) {
                 header
-                Spacer(minLength: 0)
-                route
                 Spacer(minLength: 0)
                 footer
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
 
-            // 3. barcode 装饰条：置于最上层，使用原图自带透明度。
-            barcodeBand
+            // 3. 航线 + barcode：同一中心，上下左右都居中。
+            //    barcode 放在 route 之后，才会压在航线文字之上。
+            ZStack {
+                route
+                barcodeBand
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
         }
         .frame(width: 329, height: 155)
         .clipShape(RoundedRectangle(cornerRadius: 21.67, style: .continuous))
@@ -53,6 +57,8 @@ struct ContentView: View {
                 .resizable()
                 .frame(width: 329, height: 64)
                 .frame(maxHeight: .infinity, alignment: .center)
+                // 原图 alpha 平均约 18%，乘 2.2 提到约 40%，让条纹更明显。
+                .opacity(2.2)
                 .allowsHitTesting(false)
         }
     }
@@ -93,7 +99,15 @@ struct ContentView: View {
         .foregroundColor(routeColor)
         .lineLimit(1)
         .minimumScaleFactor(0.5)
+        // Staatliches 基线下方留白较大，大写字形视觉重心偏上，
+        // 用 alignmentGuide 把视觉中心压回容器中心。
+        .alignmentGuide(VerticalAlignment.center) { dims in
+            dims[VerticalAlignment.center] - Self.routeOpticalOffset
+        }
     }
+
+    /// 视觉补偿：按字体度量计算，字号 56 时约 1.3pt。
+    private static let routeOpticalOffset: CGFloat = 1.5
 
     /// 航班号 + 机型，整行居中。
     private var footer: some View {
