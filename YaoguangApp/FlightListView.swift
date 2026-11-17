@@ -102,16 +102,6 @@ struct FlightListView: View {
         return resolver.routes[callsign]
     }
 
-    /// 从 ICAO 呼号中提取航班号（3 位航司码 + 数字后缀），用于图标旁紧凑显示。
-    private static func flightNumber(from callsign: String?) -> String? {
-        guard let callsign, callsign.count >= 4 else { return nil }
-        let prefix = String(callsign.prefix(3))
-        let suffix = callsign.dropFirst(3)
-        guard prefix.range(of: #"^[A-Z]{3}$"#, options: .regularExpression) != nil,
-              suffix.first?.isNumber == true else { return nil }
-        return String(suffix)
-    }
-
     // MARK: - 单元格
 
     private func columnTitle(_ title: String, unit: String? = nil) -> Text {
@@ -125,24 +115,14 @@ struct FlightListView: View {
     private func callsignCell(_ aircraft: LiveAircraft) -> some View {
         let callsign = aircraft.callsign?.trimmingCharacters(in: .whitespacesAndNewlines)
         let isUnknown = callsign == nil || callsign?.isEmpty == true
-        let airline = routeInfo(for: aircraft)?.airline?.name
-        let flightNumber = Self.flightNumber(from: callsign)
 
         return HStack(spacing: 6) {
             AirlineLogoView(callsign: isUnknown ? nil : callsign)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(isUnknown ? "Unknown" : (flightNumber ?? callsign!))
-                    .font(.system(size: 13, weight: .bold))
-                    .italic(isUnknown)
-                    .foregroundStyle(isUnknown ? Color.secondary : Color.primary)
-                    .lineLimit(1)
-                if let airline {
-                    Text(airline)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
+            Text(isUnknown ? "Unknown" : callsign!)
+                .font(.system(size: 13, weight: .bold))
+                .italic(isUnknown)
+                .foregroundStyle(isUnknown ? Color.secondary : Color.primary)
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .help(isUnknown ? "Unknown" : callsign!)
