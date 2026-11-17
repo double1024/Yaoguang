@@ -10,12 +10,8 @@ struct FlightListView: View {
     var body: some View {
         VStack(spacing: 0) {
             if receiver.aircraft.isEmpty {
-                ContentUnavailableView(
-                    "No Aircraft Received Yet",
-                    systemImage: "antenna.radiowaves.left.and.right",
-                    description: Text("Connect the RTL-SDR and wait for ADS-B broadcasts.")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                defaultProfileView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Table(receiver.aircraft) {
                     TableColumn(columnTitle("Callsign")) { aircraft in
@@ -101,6 +97,63 @@ struct FlightListView: View {
             RouteEditorView(callsign: target.callsign, resolver: resolver) {
                 editingCallsign = nil
             }
+        }
+    }
+
+    // MARK: - 默认航班资料（未收到 ADS-B 数据时展示）
+
+    private var defaultProfileView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .foregroundStyle(.secondary)
+                Text("Waiting for ADS-B — showing the default flight")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 16) {
+                Text("\(DefaultFlightProfile.originIATA) → \(DefaultFlightProfile.destinationIATA)")
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                Text("\(DefaultFlightProfile.airlineNameLocalized) \(DefaultFlightProfile.flightNumber)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) {
+                GridRow {
+                    profileField("出发机场", "\(DefaultFlightProfile.originNameLocalized)（\(DefaultFlightProfile.originICAO) / \(DefaultFlightProfile.originIATA)）")
+                    profileField("到达机场", "\(DefaultFlightProfile.destinationNameLocalized)（同场环飞）")
+                }
+                GridRow {
+                    profileField("航班日期", DefaultFlightProfile.flightDate)
+                    profileField("执飞机型", "\(DefaultFlightProfile.aircraftType)（\(DefaultFlightProfile.aircraftTypeShort)）")
+                }
+                GridRow {
+                    profileField("计划时间", "\(DefaultFlightProfile.scheduledDeparture) → \(DefaultFlightProfile.scheduledArrival)")
+                    profileField("实际时间", "\(DefaultFlightProfile.actualDeparture) → \(DefaultFlightProfile.actualArrival)")
+                }
+                GridRow {
+                    profileField("飞行时长", DefaultFlightProfile.duration)
+                    profileField("巡航高度", "\(DefaultFlightProfile.cruiseAltitudeFt) ft")
+                }
+                GridRow {
+                    profileField("注册号", "\(DefaultFlightProfile.registration)（\(DefaultFlightProfile.aircraftName)）")
+                    profileField("降落跑道", DefaultFlightProfile.landingRunway)
+                }
+            }
+            .font(.system(size: 12))
+        }
+        .padding(24)
+    }
+
+    private func profileField(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+            Text(value)
+                .font(.system(size: 12))
         }
     }
 

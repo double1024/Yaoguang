@@ -15,12 +15,13 @@
 		A10000000000000000000006 /* YaoguangApp/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* YaoguangApp/Assets.xcassets */; };
 		A10000000000000000000007 /* fonts in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* fonts */; };
 		A10000000000000000000008 /* flightaware_logos in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* flightaware_logos */; };
-		A10000000000000000000009 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Models.swift */; };
-		A1000000000000000000000A /* StoreLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* StoreLocation.swift */; };
-		A1000000000000000000000B /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* HistoryStore.swift */; };
-		A1000000000000000000000C /* ADSBDBClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* ADSBDBClient.swift */; };
-		A1000000000000000000000D /* FlightInfoResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* FlightInfoResolver.swift */; };
+		A10000000000000000000009 /* Persistence/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Persistence/Models.swift */; };
+		A1000000000000000000000A /* Persistence/StoreLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* Persistence/StoreLocation.swift */; };
+		A1000000000000000000000B /* Persistence/HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* Persistence/HistoryStore.swift */; };
+		A1000000000000000000000C /* Networking/ADSBDBClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* Networking/ADSBDBClient.swift */; };
+		A1000000000000000000000D /* Networking/FlightInfoResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* Networking/FlightInfoResolver.swift */; };
 		A1000000000000000000000E /* RouteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* RouteEditorView.swift */; };
+		A10000000000000000000016 /* DefaultFlightProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* DefaultFlightProfile.swift */; };
 		A1000000000000000000000F /* WidgetFlightSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* WidgetFlightSnapshot.swift */; };
 		A10000000000000000000010 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* ContentView.swift */; };
 		A10000000000000000000011 /* FlightWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* FlightWidget.swift */; };
@@ -77,12 +78,13 @@
 		A20000000000000000000009 /* Config/AppMetadata.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/AppMetadata.xcconfig; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000010 /* fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = fonts; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000011 /* flightaware_logos */ = {isa = PBXFileReference; lastKnownFileType = folder; path = flightaware_logos; sourceTree = SOURCE_ROOT; };
-		A20000000000000000000012 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/Models.swift; sourceTree = "<group>"; };
-		A20000000000000000000013 /* StoreLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/StoreLocation.swift; sourceTree = "<group>"; };
-		A20000000000000000000014 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/HistoryStore.swift; sourceTree = "<group>"; };
-		A20000000000000000000015 /* ADSBDBClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/ADSBDBClient.swift; sourceTree = "<group>"; };
-		A20000000000000000000016 /* FlightInfoResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/FlightInfoResolver.swift; sourceTree = "<group>"; };
+		A20000000000000000000012 /* Persistence/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/Models.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* Persistence/StoreLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/StoreLocation.swift; sourceTree = "<group>"; };
+		A20000000000000000000014 /* Persistence/HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/HistoryStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* Networking/ADSBDBClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/ADSBDBClient.swift; sourceTree = "<group>"; };
+		A20000000000000000000016 /* Networking/FlightInfoResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/FlightInfoResolver.swift; sourceTree = "<group>"; };
 		A20000000000000000000017 /* RouteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteEditorView.swift; sourceTree = "<group>"; };
+		A20000000000000000000022 /* DefaultFlightProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultFlightProfile.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* YaoguangWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = YaoguangWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000019 /* FlightWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightWidget.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* WidgetFlightSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetFlightSnapshot.swift; sourceTree = "<group>"; };
@@ -133,12 +135,13 @@
 				A20000000000000000000001 /* YaoguangApp.swift */,
 				A20000000000000000000002 /* ReceiverModel.swift */,
 				A20000000000000000000003 /* FlightListView.swift */,
-				A20000000000000000000012 /* Models.swift */,
-				A20000000000000000000013 /* StoreLocation.swift */,
-				A20000000000000000000014 /* HistoryStore.swift */,
-				A20000000000000000000015 /* ADSBDBClient.swift */,
-				A20000000000000000000016 /* FlightInfoResolver.swift */,
+				A20000000000000000000012 /* Persistence/Models.swift */,
+				A20000000000000000000013 /* Persistence/StoreLocation.swift */,
+				A20000000000000000000014 /* Persistence/HistoryStore.swift */,
+				A20000000000000000000015 /* Networking/ADSBDBClient.swift */,
+				A20000000000000000000016 /* Networking/FlightInfoResolver.swift */,
 				A20000000000000000000017 /* RouteEditorView.swift */,
+				A20000000000000000000022 /* DefaultFlightProfile.swift */,
 				A20000000000000000000004 /* Yaoguang-Bridging-Header.h */,
 				A20000000000000000000005 /* Yaoguang.entitlements */,
 			);
@@ -319,12 +322,13 @@
 				A10000000000000000000001 /* YaoguangApp.swift in Sources */,
 				A10000000000000000000002 /* ReceiverModel.swift in Sources */,
 				A10000000000000000000003 /* FlightListView.swift in Sources */,
-				A10000000000000000000009 /* Models.swift in Sources */,
-				A1000000000000000000000A /* StoreLocation.swift in Sources */,
-				A1000000000000000000000B /* HistoryStore.swift in Sources */,
-				A1000000000000000000000C /* ADSBDBClient.swift in Sources */,
-				A1000000000000000000000D /* FlightInfoResolver.swift in Sources */,
+				A10000000000000000000009 /* Persistence/Models.swift in Sources */,
+				A1000000000000000000000A /* Persistence/StoreLocation.swift in Sources */,
+				A1000000000000000000000B /* Persistence/HistoryStore.swift in Sources */,
+				A1000000000000000000000C /* Networking/ADSBDBClient.swift in Sources */,
+				A1000000000000000000000D /* Networking/FlightInfoResolver.swift in Sources */,
 				A1000000000000000000000E /* RouteEditorView.swift in Sources */,
+				A10000000000000000000016 /* DefaultFlightProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -376,7 +380,7 @@
 				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_ENTITLEMENTS = YaoguangApp/Yaoguang.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 53Q9GARPRK;
 				ENABLE_APP_SANDBOX = YES;
@@ -407,7 +411,7 @@
 				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_ENTITLEMENTS = YaoguangApp/Yaoguang.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 53Q9GARPRK;
 				ENABLE_APP_SANDBOX = YES;
@@ -435,7 +439,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = YaoguangWidget/YaoguangWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
 				DEVELOPMENT_TEAM = 53Q9GARPRK;
@@ -464,7 +468,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = YaoguangWidget/YaoguangWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
 				DEVELOPMENT_TEAM = 53Q9GARPRK;
@@ -499,20 +503,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A80000000000000000000003 /* Build configuration list for PBXNativeTarget "YaoguangWidget" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A60000000000000000000005 /* Debug */,
-				A60000000000000000000006 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		A80000000000000000000002 /* Build configuration list for PBXNativeTarget "Yaoguang" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A60000000000000000000003 /* Debug */,
 				A60000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80000000000000000000003 /* Build configuration list for PBXNativeTarget "YaoguangWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A60000000000000000000005 /* Debug */,
+				A60000000000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

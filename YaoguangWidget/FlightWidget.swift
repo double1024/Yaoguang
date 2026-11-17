@@ -27,21 +27,25 @@ struct FlightTimelineProvider: TimelineProvider {
 }
 
 extension WidgetFlightSnapshot {
-    /// 设计稿中的样例数据。
+    /// 默认展示：香港快运航空 UO1800 香港环飞。
     static var sample: WidgetFlightSnapshot {
         WidgetFlightSnapshot(
             writtenAt: Date(),
-            origin: "YVR",
-            destination: "PEK",
-            airlineName: "Air Canada",
-            flightNumber: "AC029",
-            aircraftType: "Boeing 787-9"
+            origin: WidgetDefaultFlight.origin,
+            destination: WidgetDefaultFlight.destination,
+            airlineName: WidgetDefaultFlight.airlineName,
+            flightNumber: WidgetDefaultFlight.flightNumber,
+            aircraftType: WidgetDefaultFlight.aircraftType
         )
     }
 }
 
 struct FlightWidget: Widget {
     static let kind = "FlightWidget"
+
+    init() {
+        ContentView.registerFonts()
+    }
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: Self.kind, provider: FlightTimelineProvider()) { entry in

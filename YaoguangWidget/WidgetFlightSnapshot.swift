@@ -32,6 +32,14 @@ struct WidgetFlightSnapshot: Codable, Equatable {
     }
 }
 
+enum WidgetDefaultFlight {
+    static let origin = "HKG"
+    static let destination = "HKG"
+    static let airlineName = "HK Express"
+    static let flightNumber = "UO1800"
+    static let aircraftType = "A320neo"
+}
+
 enum WidgetSharedStorage {
     static let appGroupIdentifier = "group.com.yaoguang.app"
     static let fileName = "widget-flight.json"
