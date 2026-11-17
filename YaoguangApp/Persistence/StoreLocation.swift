@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// 应用本地存储目录与 ModelContainer 的创建。
-enum AppStorage {
+enum StoreLocation {
     struct Directories {
         let root: URL
         let database: URL
@@ -29,12 +29,22 @@ enum AppStorage {
     }
 
     /// 创建挂载到 Database/Yaoguang.store 的 ModelContainer。
+    /// Schema 升级后旧库不兼容时不做迁移，直接重建新库（历史数据由用户手动删除）。
     static func makeModelContainer() throws -> ModelContainer {
         let dirs = try makeDirectories()
         let schema = Schema(versionedSchema: YaoguangSchemaV1.self)
         let url = dirs.database.appendingPathComponent("Yaoguang.store")
         let configuration = ModelConfiguration("Yaoguang", schema: schema, url: url)
-        return try ModelContainer(for: schema, migrationPlan: YaoguangMigrationPlan.self,
-                                  configurations: [configuration])
+        do {
+            return try ModelContainer(for: schema, configurations: [configuration])
+        } catch {
+            // 旧库与新 Schema 不兼容：移除 store 与 WAL/SHM 后重建。
+            let fm = FileManager.default
+            for suffix in ["", "-wal", "-shm"] {
+                let file = URL(fileURLWithPath: url.path + suffix)
+                try? fm.removeItem(at: file)
+            }
+            return try ModelContainer(for: schema, configurations: [configuration])
+        }
     }
 }

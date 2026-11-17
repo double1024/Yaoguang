@@ -5,6 +5,8 @@ struct FlightListView: View {
     @ObservedObject var receiver: ReceiverModel
     @ObservedObject var resolver: FlightInfoResolver
 
+    @State private var editingCallsign: String?
+
     var body: some View {
         VStack(spacing: 0) {
             if receiver.aircraft.isEmpty {
@@ -92,6 +94,14 @@ struct FlightListView: View {
             .padding(.vertical, 7)
         }
         .font(.system(size: 13, design: .default))
+        .sheet(item: Binding(
+            get: { editingCallsign.map(CallsignTarget.init) },
+            set: { editingCallsign = $0?.callsign }
+        )) { target in
+            RouteEditorView(callsign: target.callsign, resolver: resolver) {
+                editingCallsign = nil
+            }
+        }
     }
 
     // MARK: - 数据访问
@@ -116,16 +126,23 @@ struct FlightListView: View {
         let callsign = aircraft.callsign?.trimmingCharacters(in: .whitespacesAndNewlines)
         let isUnknown = callsign == nil || callsign?.isEmpty == true
 
-        return HStack(spacing: 6) {
-            AirlineLogoView(callsign: isUnknown ? nil : callsign)
-            Text(isUnknown ? "Unknown" : callsign!)
-                .font(.system(size: 13, weight: .bold))
-                .italic(isUnknown)
-                .foregroundStyle(isUnknown ? Color.secondary : Color.primary)
-                .lineLimit(1)
+        return Button {
+            guard let callsign, !isUnknown else { return }
+            editingCallsign = callsign
+        } label: {
+            HStack(spacing: 6) {
+                AirlineLogoView(callsign: isUnknown ? nil : callsign)
+                Text(isUnknown ? "Unknown" : callsign!)
+                    .font(.system(size: 13, weight: .bold))
+                    .italic(isUnknown)
+                    .foregroundStyle(isUnknown ? Color.secondary : Color.primary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .help(isUnknown ? "Unknown" : callsign!)
+        .buttonStyle(.plain)
+        .help(isUnknown ? "Unknown" : "编辑 \(callsign!) 的航线")
     }
 
     @ViewBuilder
@@ -248,4 +265,10 @@ private struct AirlineLogoView: View {
         ) else { return nil }
         return NSImage(contentsOf: url)
     }
+}
+
+/// sheet(item:) 需要的可识别包装。
+private struct CallsignTarget: Identifiable {
+    let callsign: String
+    var id: String { callsign }
 }

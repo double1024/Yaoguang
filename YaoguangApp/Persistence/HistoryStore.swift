@@ -9,8 +9,9 @@ import SwiftData
 actor HistoryStore {
     /// 样本批量写入阈值。
     private let sampleBatchSize = 100
-    /// ADSBdb 缓存有效期（30 天）。
-    private let apiCacheTTL: TimeInterval = 30 * 24 * 3600
+    /// 数据永久保存（不自动过期），由用户手动删除。
+    /// 用极大间隔表达「永不过期」，避免 nil/可选判断散落各处。
+    private let permanentTTL: TimeInterval = 100 * 365 * 24 * 3600
 
     /// 待写入样本计数（对象已 insert 进 context，save 时统一落盘）。
     private var pendingSampleCount = 0
@@ -80,6 +81,7 @@ actor HistoryStore {
         flightRoute.destinationICAO = route.destination?.icaoCode
         flightRoute.rawJSON = rawJSON
         flightRoute.fetchedAt = now
+        flightRoute.routeSource = "adsbdb"
 
         // Airline
         if let airline = route.airline, let icao = airline.icaoCode, let name = airline.name {
@@ -126,11 +128,9 @@ actor HistoryStore {
 
     // MARK: - 缓存读取
 
-    /// 返回未过期的航线缓存；命中时从 Airport/Airline 表重建完整信息。
-    func cachedRoute(callsign: String) -> RouteInfo? {
-        let now = Date()
-        guard let route = fetchFlightRoute(callsignICAO: callsign.uppercased()),
-              route.fetchedAt.addingTimeInterval(apiCacheTTL) > now else {
+    /// 读取航线。数据永久保存，库中有记录即直接返回（无过期判断）。
+    func storedRoute(callsign: String) -> RouteInfo? {
+        guard let route = fetchFlightRoute(callsignICAO: callsign.uppercased()) else {
             return nil
         }
         return RouteInfo(
@@ -142,14 +142,10 @@ actor HistoryStore {
         )
     }
 
-    /// 返回未过期的飞机档案缓存（aircraft 端点）。
+    /// 读取飞机档案。数据永久保存，库中有记录即直接返回（无过期判断）。
     func cachedAircraftInfo(icaoHex: String) -> AircraftInfo? {
-        let now = Date()
         let key = "aircraft:\(icaoHex)"
-        guard let cache = fetchAPICache(requestKey: key),
-              cache.expiresAt > now else {
-            return nil
-        }
+        guard fetchAPICache(requestKey: key) != nil else { return nil }
         guard let aircraft = fetchAircraft(icaoHex: icaoHex) else { return nil }
         return AircraftInfo(
             registration: aircraft.registration,
@@ -159,6 +155,98 @@ actor HistoryStore {
             operatorName: aircraft.operatorName,
             operatorICAO: aircraft.operatorICAO
         )
+    }
+
+    // MARK: - 航线编辑
+
+    /// 读取用于编辑的原始航线记录（不做 Airport/Airline 展开）。
+    func editableRoute(callsign: String) -> EditableRoute? {
+        guard let route = fetchFlightRoute(callsignICAO: callsign.uppercased()) else { return nil }
+        return EditableRoute(
+            callsignICAO: route.callsignICAO,
+            callsignIATA: route.callsignIATA,
+            airlineICAO: route.airlineICAO,
+            airlineName: airlineInfo(for: route.airlineICAO)?.name,
+            originICAO: route.originICAO,
+            originName: airportInfo(for: route.originICAO)?.name,
+            destinationICAO: route.destinationICAO,
+            destinationName: airportInfo(for: route.destinationICAO)?.name,
+            routeSource: route.routeSource,
+            fetchedAt: route.fetchedAt
+        )
+    }
+
+    /// 保存手工编辑。输入为空的机场/航司会被清除。
+    /// 本地不存在的机场/航司会用提供的全名新建记录，保证外键始终有效。
+    func saveManualRoute(
+        callsignICAO: String,
+        originICAO: String?,
+        originName: String?,
+        destinationICAO: String?,
+        destinationName: String?,
+        airlineICAO: String?,
+        airlineName: String?
+    ) -> RouteInfo {
+        let now = Date()
+        let key = callsignICAO.uppercased()
+
+        let route: FlightRoute
+        if let existing = fetchFlightRoute(callsignICAO: key) {
+            route = existing
+        } else {
+            route = FlightRoute(callsignICAO: key, fetchedAt: now)
+            modelContext.insert(route)
+        }
+
+        route.originICAO = normalized(originICAO)
+        route.destinationICAO = normalized(destinationICAO)
+        route.airlineICAO = normalized(airlineICAO)
+        route.routeSource = "manual"
+        route.fetchedAt = now
+
+        // 补齐本地缺失的机场/航司记录
+        if let originICAO = normalized(originICAO) {
+            ensureAirport(icaoCode: originICAO, name: originName)
+        }
+        if let destinationICAO = normalized(destinationICAO) {
+            ensureAirport(icaoCode: destinationICAO, name: destinationName)
+        }
+        if let airlineICAO = normalized(airlineICAO) {
+            ensureAirline(icaoCode: airlineICAO, name: airlineName)
+        }
+
+        return RouteInfo(
+            callsignICAO: route.callsignICAO,
+            callsignIATA: route.callsignIATA,
+            airline: airlineInfo(for: route.airlineICAO),
+            origin: airportInfo(for: route.originICAO),
+            destination: airportInfo(for: route.destinationICAO)
+        )
+    }
+
+    /// 机场/航司是否存在（供编辑页提示是否需要填写全名）。
+    func knownAirportName(icaoCode: String) -> String? { airportInfo(for: normalized(icaoCode))?.name }
+    func knownAirlineName(icaoCode: String) -> String? { airlineInfo(for: normalized(icaoCode))?.name }
+
+    private func normalized(_ code: String?) -> String? {
+        guard let code else { return nil }
+        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// 本地已有则保持，缺失则以给定全名（缺省回退为 ICAO 码）新建。
+    private func ensureAirport(icaoCode: String, name: String?) {
+        if fetchAirport(icaoCode: icaoCode) != nil { return }
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalName = (trimmedName?.isEmpty == false) ? trimmedName! : icaoCode
+        modelContext.insert(Airport(icaoCode: icaoCode, name: finalName))
+    }
+
+    private func ensureAirline(icaoCode: String, name: String?) {
+        if fetchAirline(icaoCode: icaoCode) != nil { return }
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalName = (trimmedName?.isEmpty == false) ? trimmedName! : icaoCode
+        modelContext.insert(Airline(icaoCode: icaoCode, name: finalName))
     }
 
     // MARK: - 落盘与对账
@@ -293,7 +381,7 @@ actor HistoryStore {
         } else {
             cache = APICache(requestKey: requestKey, provider: provider, requestURL: requestURL,
                              responseJSON: responseJSON, fetchedAt: fetchedAt,
-                             expiresAt: fetchedAt.addingTimeInterval(apiCacheTTL),
+                             expiresAt: fetchedAt.addingTimeInterval(permanentTTL),
                              httpStatusCode: httpStatusCode)
             modelContext.insert(cache)
         }
@@ -301,7 +389,7 @@ actor HistoryStore {
         cache.requestURL = requestURL
         cache.responseJSON = responseJSON
         cache.fetchedAt = fetchedAt
-        cache.expiresAt = fetchedAt.addingTimeInterval(apiCacheTTL)
+        cache.expiresAt = fetchedAt.addingTimeInterval(permanentTTL)
         cache.httpStatusCode = httpStatusCode
         cache.errorMessage = error
     }

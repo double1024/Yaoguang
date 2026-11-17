@@ -75,6 +75,8 @@ final class FlightRoute {
     var destinationICAO: String?
     var rawJSON: String?
     var fetchedAt: Date
+    /// "adsbdb" 表示来自 API，"manual" 表示用户在编辑页手工修改。
+    var routeSource: String?
 
     init(callsignICAO: String, fetchedAt: Date) {
         self.callsignICAO = callsignICAO
@@ -139,7 +141,7 @@ final class APICache {
 // MARK: - 版本化 Schema 与迁移
 
 enum YaoguangSchemaV1: VersionedSchema {
-    static let versionIdentifier = Schema.Version(1, 0, 0)
+    static let versionIdentifier = Schema.Version(2, 0, 0)
 
     static var models: [any PersistentModel.Type] {
         [Aircraft.self, AircraftStateSample.self, Flight.self, FlightRoute.self,
@@ -204,6 +206,20 @@ struct RouteInfo: Sendable, Equatable {
     let airline: AirlineInfo?
     let origin: AirportInfo?
     let destination: AirportInfo?
+}
+
+/// 供编辑页使用的航线记录（含已展开的全名）。
+struct EditableRoute: Sendable, Equatable {
+    let callsignICAO: String
+    let callsignIATA: String?
+    let airlineICAO: String?
+    let airlineName: String?
+    let originICAO: String?
+    let originName: String?
+    let destinationICAO: String?
+    let destinationName: String?
+    let routeSource: String?
+    let fetchedAt: Date
 }
 
 /// 飞机档案信息（来自 ADSBdb aircraft 端点）。

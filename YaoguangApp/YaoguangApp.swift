@@ -11,7 +11,7 @@ struct YaoguangApp: App {
     init() {
         let container: ModelContainer
         do {
-            container = try AppStorage.makeModelContainer()
+            container = try StoreLocation.makeModelContainer()
         } catch {
             fatalError("无法初始化本地存储：\(error)")
         }
@@ -40,9 +40,24 @@ struct YaoguangApp: App {
 
 struct ReceiverSettingsView: View {
     @ObservedObject var receiver: ReceiverModel
+    @AppStorage("lookupPriority") private var priorityRaw: String = LookupPriority.databaseFirst.rawValue
 
     var body: some View {
         Form {
+            Section("航线查询") {
+                Picker("优先级", selection: $priorityRaw) {
+                    ForEach(LookupPriority.allCases) { option in
+                        Text(option.title).tag(option.rawValue)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+
+                Text(LookupPriority(rawValue: priorityRaw)?.detail ?? "")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Section("Receiver Connection") {
                 HStack(alignment: .center, spacing: 16) {
                     Text("Reopens the RTL-SDR. The current flight list and packet counts will be cleared.")

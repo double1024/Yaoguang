@@ -16,10 +16,11 @@
 		A10000000000000000000007 /* fonts in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* fonts */; };
 		A10000000000000000000008 /* flightaware_logos in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* flightaware_logos */; };
 		A10000000000000000000009 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Models.swift */; };
-		A1000000000000000000000A /* AppStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* AppStorage.swift */; };
+		A1000000000000000000000A /* StoreLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* StoreLocation.swift */; };
 		A1000000000000000000000B /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* HistoryStore.swift */; };
 		A1000000000000000000000C /* ADSBDBClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* ADSBDBClient.swift */; };
 		A1000000000000000000000D /* FlightInfoResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* FlightInfoResolver.swift */; };
+		A1000000000000000000000E /* RouteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* RouteEditorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -49,10 +50,11 @@
 		A20000000000000000000010 /* fonts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = fonts; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000011 /* flightaware_logos */ = {isa = PBXFileReference; lastKnownFileType = folder; path = flightaware_logos; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000012 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/Models.swift; sourceTree = "<group>"; };
-		A20000000000000000000013 /* AppStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/AppStorage.swift; sourceTree = "<group>"; };
+		A20000000000000000000013 /* StoreLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/StoreLocation.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence/HistoryStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* ADSBDBClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/ADSBDBClient.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* FlightInfoResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/FlightInfoResolver.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* RouteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteEditorView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,10 +89,11 @@
 				A20000000000000000000002 /* ReceiverModel.swift */,
 				A20000000000000000000003 /* FlightListView.swift */,
 				A20000000000000000000012 /* Models.swift */,
-				A20000000000000000000013 /* AppStorage.swift */,
+				A20000000000000000000013 /* StoreLocation.swift */,
 				A20000000000000000000014 /* HistoryStore.swift */,
 				A20000000000000000000015 /* ADSBDBClient.swift */,
 				A20000000000000000000016 /* FlightInfoResolver.swift */,
+				A20000000000000000000017 /* RouteEditorView.swift */,
 				A20000000000000000000004 /* Yaoguang-Bridging-Header.h */,
 				A20000000000000000000005 /* Yaoguang.entitlements */,
 			);
@@ -215,10 +218,11 @@
 				A10000000000000000000002 /* ReceiverModel.swift in Sources */,
 				A10000000000000000000003 /* FlightListView.swift in Sources */,
 				A10000000000000000000009 /* Models.swift in Sources */,
-				A1000000000000000000000A /* AppStorage.swift in Sources */,
+				A1000000000000000000000A /* StoreLocation.swift in Sources */,
 				A1000000000000000000000B /* HistoryStore.swift in Sources */,
 				A1000000000000000000000C /* ADSBDBClient.swift in Sources */,
 				A1000000000000000000000D /* FlightInfoResolver.swift in Sources */,
+				A1000000000000000000000E /* RouteEditorView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
