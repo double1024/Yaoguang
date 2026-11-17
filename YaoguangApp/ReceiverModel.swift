@@ -46,12 +46,6 @@ final class ReceiverModel: ObservableObject {
 
     @Published private(set) var aircraft: [LiveAircraft] = []
 
-    /// 表格行：默认航班固定第一行，其后是真实飞机，最多 10 行。
-    var displayRows: [LiveAircraft] {
-        var rows = [Self.defaultAircraft]
-        rows.append(contentsOf: aircraft.prefix(maxTrackedAircraft - 1))
-        return rows
-    }
     @Published private(set) var status = "Receiver not started"
     @Published private(set) var validPacketCount: UInt64 = 0
     /// 小组件快照的写入状态，便于排查「小组件不更新」。
@@ -79,6 +73,11 @@ final class ReceiverModel: ObservableObject {
         aircraftByICAO.removeAll()
         aircraft = []
         lastSample.removeAll()
+        // 启动时注入 HKE1800，等同于收到一条包：之后按时间排序，满 10 条会被淘汰。
+        var seed = Self.defaultAircraft
+        seed.lastSeen = Date()
+        aircraftByICAO[seed.icao24] = seed
+        publishAircraftInRecentOrder()
         activeFlight.removeAll()
         guard let newHandle = yaoguang_start() else {
             status = "Unable to create receiver thread"
@@ -300,9 +299,8 @@ final class ReceiverModel: ObservableObject {
             return
         }
 
-        // 按表格顺序，跳过默认占位行，取第一条呼号完整的真实飞机。
-        let validRow = displayRows.first { row in
-            guard !row.isDefault else { return false }
+        // 表格已按最近优先排序；取第一条呼号完整的行（可能是注入的 HKE1800）。
+        let validRow = aircraft.first { row in
             let callsign = row.callsign?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             return !callsign.isEmpty
         }
@@ -314,7 +312,7 @@ final class ReceiverModel: ObservableObject {
         let aircraftType: String?
         let designator: String?
 
-        if let validRow, let rawCallsign = validRow.callsign {
+        if let validRow, !validRow.isDefault, let rawCallsign = validRow.callsign {
             callsign = rawCallsign.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
             let route = resolver.routes[callsign]
             origin = route?.origin?.iataCode ?? route?.origin?.icaoCode

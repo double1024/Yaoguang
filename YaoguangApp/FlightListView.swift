@@ -9,7 +9,7 @@ struct FlightListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Table(receiver.displayRows) {
+            Table(receiver.aircraft) {
                     TableColumn(columnTitle("Callsign")) { aircraft in
                         callsignCell(aircraft)
                     }
