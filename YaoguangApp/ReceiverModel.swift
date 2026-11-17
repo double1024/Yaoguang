@@ -36,6 +36,8 @@ final class ReceiverModel: ObservableObject {
     @Published private(set) var aircraft: [LiveAircraft] = []
     @Published private(set) var status = "Receiver not started"
     @Published private(set) var validPacketCount: UInt64 = 0
+    /// 小组件快照的写入状态，便于排查「小组件不更新」。
+    @Published private(set) var widgetStatus = "widget: —"
 
     private var handle: OpaquePointer?
     private var pollTimer: Timer?
@@ -275,9 +277,15 @@ final class ReceiverModel: ObservableObject {
     /// 把最近一架飞机的展示信息写入 App Group，供小组件读取。
     /// 变更才写，且最多每 5 秒一次，避免高频磁盘写入。
     private func publishWidgetSnapshot() {
-        guard let latest = aircraft.first,
-              let callsign = latest.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
-              !callsign.isEmpty else { return }
+        guard let latest = aircraft.first else {
+            widgetStatus = "widget: 无飞机"
+            return
+        }
+        guard let callsign = latest.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+              !callsign.isEmpty else {
+            widgetStatus = "widget: 无呼号"
+            return
+        }
 
         let route = resolver.routes[callsign]
         let info = resolver.aircraftInfo[Self.hexString(latest.icao24)]
@@ -289,7 +297,10 @@ final class ReceiverModel: ObservableObject {
         let aircraftType = info?.aircraftType ?? info?.icaoType
 
         // 只有航线真正解析出来（起降地都拿到）才更新小组件；否则保留上一次显示。
-        guard let origin, let destination else { return }
+        guard let origin, let destination else {
+            widgetStatus = "widget: 等待航线（\(callsign)）"
+            return
+        }
 
         let designator = route?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
         let logoData = Self.airlineLogoData(designator: designator)
@@ -310,6 +321,8 @@ final class ReceiverModel: ObservableObject {
             airlineLogoData: logoData
         ))
         WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
+        widgetStatus = "widget: 已更新 \(callsign) \(origin)→\(destination)"
+        print("[widget] snapshot written: \(callsign) \(origin)->\(destination)")
     }
 
     /// 从呼号取三字 ICAO 航司码（如 "HKE1800" → "HKE"）。

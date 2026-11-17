@@ -82,6 +82,9 @@ struct FlightListView: View {
                 Image(systemName: "dot.radiowaves.left.and.right")
                 Text(receiver.status)
                 Spacer(minLength: 12)
+                Text(receiver.widgetStatus)
+                    .lineLimit(1)
+                    .foregroundStyle(.tertiary)
                 apiActivityView
             }
             .font(.caption)
