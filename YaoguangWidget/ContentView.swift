@@ -16,9 +16,12 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // 1. 玻璃卡片背景
+            // 1. 玻璃卡片背景：只用 glassEffect + 一层很淡的色调，
+            //    避免再叠加 regularMaterial 导致过白、过硬。
             RoundedRectangle(cornerRadius: 21.67, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(colorScheme == .dark
+                      ? Color.black.opacity(0.28)
+                      : Color.white.opacity(0.16))
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 21.67, style: .continuous))
 
             // 2. barcode 装饰条（登机牌风格，居中）
