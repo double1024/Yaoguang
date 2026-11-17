@@ -53,16 +53,13 @@ enum WidgetSharedStorage {
     static let fileName = "widget-flight.json"
     static let directoryName = "Yaoguang"
 
-    /// 与主程序共享：~/Library/Application Support/Yaoguang/widget-flight.json
+    /// App Group 容器：group.com.yaoguang.app/widget-flight.json
+    static func containerURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.yaoguang.app")
+    }
+
     static func snapshotURL() -> URL? {
-        let fm = FileManager.default
-        guard let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                           appropriateFor: nil, create: true) else {
-            return nil
-        }
-        let root = appSupport.appendingPathComponent(directoryName, isDirectory: true)
-        try? fm.createDirectory(at: root, withIntermediateDirectories: true)
-        return root.appendingPathComponent(fileName, isDirectory: false)
+        containerURL()?.appendingPathComponent(fileName, isDirectory: false)
     }
 
     static func load() -> WidgetFlightSnapshot? {

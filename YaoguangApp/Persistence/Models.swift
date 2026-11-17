@@ -253,17 +253,13 @@ enum WidgetSharedStorage {
     static let fileName = "widget-flight.json"
     static let directoryName = "Yaoguang"
 
-    /// 主程序与小组件共享的目录：~/Library/Application Support/Yaoguang/
-    /// 不使用 App Group（免费开发者账号不支持），改为直接共享文件。
+    /// App Group 容器：group.com.yaoguang.app/widget-flight.json
+    static func containerURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.yaoguang.app")
+    }
+
     static func snapshotURL() -> URL? {
-        let fm = FileManager.default
-        guard let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                           appropriateFor: nil, create: true) else {
-            return nil
-        }
-        let root = appSupport.appendingPathComponent(directoryName, isDirectory: true)
-        try? fm.createDirectory(at: root, withIntermediateDirectories: true)
-        return root.appendingPathComponent(fileName, isDirectory: false)
+        containerURL()?.appendingPathComponent(fileName, isDirectory: false)
     }
 
     /// 写入快照。返回是否真正落盘，便于界面显示真实结果。
