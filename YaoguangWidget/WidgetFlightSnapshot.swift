@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 /// 主应用写入、小组件扩展读取的共享快照。
 ///
@@ -41,10 +40,6 @@ enum WidgetSharedStorage {
     static let appGroupIdentifier = "53Q9GARPRK.com.yaoguang.shared"
     static let fileName = "widget-flight.json"
 
-    private static let keychainService = "com.yaoguang.app.widget"
-    private static let keychainAccount = "flight-snapshot"
-    private static let keychainAccessGroup = "53Q9GARPRK.yaoguang.shared"
-
     static func containerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
     }
@@ -56,32 +51,13 @@ enum WidgetSharedStorage {
             .appendingPathComponent(fileName, isDirectory: false)
     }
 
+    /// 读取快照。只接受当前 schema 版本；旧版本文件视为无数据（避免显示过期格式）。
     static func load() -> WidgetFlightSnapshot? {
-        if let url = snapshotURL(), let data = try? Data(contentsOf: url), let snapshot = decode(data) {
-            return snapshot
-        }
-        return loadFromKeychain()
-    }
-
-    private static func loadFromKeychain() -> WidgetFlightSnapshot? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-            kSecAttrAccessGroup as String: keychainAccessGroup,
-            kSecUseDataProtectionKeychain as String: true,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
-        return decode(data)
-    }
-
-    private static func decode(_ data: Data) -> WidgetFlightSnapshot? {
+        guard let url = snapshotURL(), let data = try? Data(contentsOf: url) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
-        return try? decoder.decode(WidgetFlightSnapshot.self, from: data)
+        guard let snapshot = try? decoder.decode(WidgetFlightSnapshot.self, from: data),
+              snapshot.version == WidgetFlightSnapshot.schemaVersion else { return nil }
+        return snapshot
     }
 }

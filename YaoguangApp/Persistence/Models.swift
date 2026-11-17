@@ -1,5 +1,4 @@
 import Foundation
-import Security
 import SwiftData
 
 // MARK: - SwiftData 持久化模型
@@ -256,93 +255,43 @@ enum WidgetSharedStorage {
     static let appGroupIdentifier = "53Q9GARPRK.com.yaoguang.shared"
     static let fileName = "widget-flight.json"
 
-    // App Group 不可用时的 Keychain 兜底
-    private static let keychainService = "com.yaoguang.app.widget"
-    private static let keychainAccount = "flight-snapshot"
-    private static let keychainAccessGroup = "53Q9GARPRK.yaoguang.shared"
-
-    // MARK: - App Group 文件
-
     static func containerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
     }
 
     private static func snapshotURL() -> URL? {
         guard let container = containerURL() else { return nil }
+        return container
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+            .appendingPathComponent(fileName, isDirectory: false)
+    }
+
+    /// 写入快照。返回 nil 表示成功，否则返回错误描述。
+    static func save(_ snapshot: WidgetFlightSnapshot) -> String? {
+        guard let container = containerURL() else {
+            return "App Group 容器不可用"
+        }
         let directory = container.appendingPathComponent("Library/Application Support", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         } catch {
-            return nil
+            return "创建目录失败：\(error.localizedDescription)"
         }
-        return directory.appendingPathComponent(fileName, isDirectory: false)
-    }
-
-    // MARK: - 写入（文件优先，Keychain 兜底）
-
-    /// 返回 nil 表示成功，否则返回错误描述。
-    static func save(_ snapshot: WidgetFlightSnapshot) -> String? {
+        let url = directory.appendingPathComponent(fileName, isDirectory: false)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
         guard let data = try? encoder.encode(snapshot) else { return "编码失败" }
-
-        var fileError: String?
-        if let url = snapshotURL() {
-            do {
-                try data.write(to: url)
-                return nil
-            } catch {
-                fileError = error.localizedDescription
-            }
-        } else {
-            fileError = "App Group 容器不可用"
+        do {
+            try data.write(to: url)
+            return nil
+        } catch {
+            return error.localizedDescription
         }
-
-        if let keychainError = saveToKeychain(data) {
-            return "文件: \(fileError ?? "?"); Keychain: \(keychainError)"
-        }
-        return nil
     }
 
-    private static func keychainQuery() -> [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
-            kSecAttrAccessGroup as String: keychainAccessGroup,
-            kSecUseDataProtectionKeychain as String: true,
-        ]
-    }
-
-    private static func saveToKeychain(_ data: Data) -> String? {
-        SecItemDelete(keychainQuery() as CFDictionary)
-        var query = keychainQuery()
-        query[kSecValueData as String] = data
-        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess ? nil : "OSStatus \(status)"
-    }
-
-    // MARK: - 读取
-
+    /// 读取快照（诊断/调试用）。
     static func load() -> WidgetFlightSnapshot? {
-        if let url = snapshotURL(), let data = try? Data(contentsOf: url), let snapshot = decode(data) {
-            return snapshot
-        }
-        return loadFromKeychain()
-    }
-
-    private static func loadFromKeychain() -> WidgetFlightSnapshot? {
-        var query = keychainQuery()
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var item: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
-              let data = item as? Data else { return nil }
-        return decode(data)
-    }
-
-    private static func decode(_ data: Data) -> WidgetFlightSnapshot? {
+        guard let url = snapshotURL(), let data = try? Data(contentsOf: url) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
         return try? decoder.decode(WidgetFlightSnapshot.self, from: data)
