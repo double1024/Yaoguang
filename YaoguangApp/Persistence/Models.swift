@@ -231,3 +231,39 @@ struct AircraftInfo: Sendable, Equatable {
     let operatorName: String?
     let operatorICAO: String?
 }
+
+// MARK: - 小组件共享快照
+
+/// 主应用写入、WidgetKit 扩展读取的快照。扩展是独立进程，无法访问 SwiftData。
+struct WidgetFlightSnapshot: Codable, Equatable {
+    static let schemaVersion = 1
+
+    var version: Int = WidgetFlightSnapshot.schemaVersion
+    var writtenAt: Date
+    var origin: String?
+    var destination: String?
+    var airlineName: String?
+    var flightNumber: String?
+    var aircraftType: String?
+}
+
+enum WidgetSharedStorage {
+    static let appGroupIdentifier = "group.com.yaoguang.app"
+    static let fileName = "widget-flight.json"
+
+    static func containerURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
+    }
+
+    static func snapshotURL() -> URL? {
+        containerURL()?.appendingPathComponent(fileName, isDirectory: false)
+    }
+
+    static func save(_ snapshot: WidgetFlightSnapshot) {
+        guard let url = snapshotURL() else { return }
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        guard let data = try? encoder.encode(snapshot) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+}

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WidgetKit
 
 /// 实时接收界面的内存状态（区别于 SwiftData 的 `Aircraft` 档案模型）。
 struct LiveAircraft: Identifiable {
@@ -202,6 +203,7 @@ final class ReceiverModel: ObservableObject {
         }
 
         publishAircraftInRecentOrder()
+        publishWidgetSnapshot()
     }
 
     private func handleCallsign(_ rawCallsign: String, icao: UInt32, at: Date) {
@@ -263,6 +265,42 @@ final class ReceiverModel: ObservableObject {
             if $0.lastSeen != $1.lastSeen { return $0.lastSeen > $1.lastSeen }
             return $0.icao24 < $1.icao24
         }
+    }
+
+    // MARK: - 小组件快照
+
+    private var lastWidgetKey: String = ""
+    private var lastWidgetWrite = Date.distantPast
+
+    /// 把最近一架飞机的展示信息写入 App Group，供小组件读取。
+    /// 变更才写，且最多每 5 秒一次，避免高频磁盘写入。
+    private func publishWidgetSnapshot() {
+        guard let latest = aircraft.first else { return }
+        let callsign = latest.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let route = callsign.flatMap { resolver.routes[$0] }
+        let info = resolver.aircraftInfo[Self.hexString(latest.icao24)]
+
+        let origin = route?.origin?.iataCode ?? route?.origin?.icaoCode
+        let destination = route?.destination?.iataCode ?? route?.destination?.icaoCode
+        let airline = route?.airline?.name
+        let flightNumber = callsign
+        let aircraftType = info?.aircraftType ?? info?.icaoType
+
+        let key = [origin, destination, airline, flightNumber, aircraftType]
+            .map { $0 ?? "" }.joined(separator: "|")
+        guard key != lastWidgetKey || Date().timeIntervalSince(lastWidgetWrite) >= 5 else { return }
+        lastWidgetKey = key
+        lastWidgetWrite = Date()
+
+        WidgetSharedStorage.save(WidgetFlightSnapshot(
+            writtenAt: Date(),
+            origin: origin,
+            destination: destination,
+            airlineName: airline,
+            flightNumber: flightNumber,
+            aircraftType: aircraftType
+        ))
+        WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
     }
 
     private static func hexString(_ icao24: UInt32) -> String {

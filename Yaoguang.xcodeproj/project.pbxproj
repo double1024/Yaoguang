@@ -21,7 +21,24 @@
 		A1000000000000000000000C /* ADSBDBClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* ADSBDBClient.swift */; };
 		A1000000000000000000000D /* FlightInfoResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* FlightInfoResolver.swift */; };
 		A1000000000000000000000E /* RouteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* RouteEditorView.swift */; };
+		A1000000000000000000000F /* WidgetFlightSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* WidgetFlightSnapshot.swift */; };
+		A10000000000000000000010 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* ContentView.swift */; };
+		A10000000000000000000011 /* FlightWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* FlightWidget.swift */; };
+		A10000000000000000000012 /* Staatliches-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* Staatliches-Regular.ttf */; };
+		A10000000000000000000013 /* Anta-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* Anta-Regular.ttf */; };
+		A10000000000000000000014 /* OFL-Anta.txt in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* OFL-Anta.txt */; };
+		A10000000000000000000015 /* YaoguangWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* YaoguangWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A90000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A50000000000000000000002 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000003;
+			remoteInfo = YaoguangWidget;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		A30000000000000000000001 /* Embed Frameworks */ = {
@@ -33,6 +50,17 @@
 				A10000000000000000000005 /* Frameworks/libyaoguang_core.dylib in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000009 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10000000000000000000015 /* YaoguangWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -55,6 +83,15 @@
 		A20000000000000000000015 /* ADSBDBClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/ADSBDBClient.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* FlightInfoResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking/FlightInfoResolver.swift; sourceTree = "<group>"; };
 		A20000000000000000000017 /* RouteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteEditorView.swift; sourceTree = "<group>"; };
+		A20000000000000000000018 /* YaoguangWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = YaoguangWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000019 /* FlightWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightWidget.swift; sourceTree = "<group>"; };
+		A2000000000000000000001A /* WidgetFlightSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetFlightSnapshot.swift; sourceTree = "<group>"; };
+		A2000000000000000000001B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A2000000000000000000001D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A2000000000000000000001E /* Staatliches-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Staatliches-Regular.ttf"; sourceTree = "<group>"; };
+		A2000000000000000000001F /* Anta-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Anta-Regular.ttf"; sourceTree = "<group>"; };
+		A20000000000000000000020 /* OFL-Anta.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-Anta.txt"; sourceTree = "<group>"; };
+		A20000000000000000000021 /* YaoguangWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YaoguangWidget.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +103,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A30000000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -73,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000002 /* YaoguangApp */,
+				A40000000000000000000005 /* YaoguangWidget */,
 				A40000000000000000000004 /* Config */,
 				A20000000000000000000007 /* Frameworks/libyaoguang_core.dylib */,
 				A20000000000000000000008 /* YaoguangApp/Assets.xcassets */,
@@ -104,6 +149,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000006 /* Yaoguang.app */,
+				A20000000000000000000018 /* YaoguangWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -114,6 +160,29 @@
 				A20000000000000000000009 /* Config/AppMetadata.xcconfig */,
 			);
 			name = Config;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000005 /* YaoguangWidget */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000019 /* FlightWidget.swift */,
+				A2000000000000000000001B /* ContentView.swift */,
+				A2000000000000000000001A /* WidgetFlightSnapshot.swift */,
+				A40000000000000000000006 /* Resources */,
+				A2000000000000000000001D /* Info.plist */,
+				A20000000000000000000021 /* YaoguangWidget.entitlements */,
+			);
+			path = YaoguangWidget;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000006 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A2000000000000000000001E /* Staatliches-Regular.ttf */,
+				A2000000000000000000001F /* Anta-Regular.ttf */,
+				A20000000000000000000020 /* OFL-Anta.txt */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -128,15 +197,34 @@
 				A30000000000000000000002 /* Frameworks */,
 				A30000000000000000000005 /* Resources */,
 				A30000000000000000000001 /* Embed Frameworks */,
+				A30000000000000000000009 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A90000000000000000000002 /* PBXTargetDependency */,
 			);
 			name = Yaoguang;
 			productName = Yaoguang;
 			productReference = A20000000000000000000006 /* Yaoguang.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A50000000000000000000003 /* YaoguangWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80000000000000000000003 /* Build configuration list for PBXNativeTarget "YaoguangWidget" */;
+			buildPhases = (
+				A30000000000000000000006 /* Sources */,
+				A30000000000000000000008 /* Frameworks */,
+				A30000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = YaoguangWidget;
+			productName = YaoguangWidget;
+			productReference = A20000000000000000000018 /* YaoguangWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -149,6 +237,9 @@
 				LastUpgradeCheck = 2720;
 				TargetAttributes = {
 					A50000000000000000000001 = {
+						CreatedOnToolsVersion = 27.2;
+					};
+					A50000000000000000000003 = {
 						CreatedOnToolsVersion = 27.2;
 					};
 				};
@@ -168,6 +259,7 @@
 			projectRoot = "";
 			targets = (
 				A50000000000000000000001 /* Yaoguang */,
+				A50000000000000000000003 /* YaoguangWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -180,6 +272,16 @@
 				A10000000000000000000006 /* YaoguangApp/Assets.xcassets in Resources */,
 				A10000000000000000000007 /* fonts in Resources */,
 				A10000000000000000000008 /* flightaware_logos in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000012 /* Staatliches-Regular.ttf in Resources */,
+				A10000000000000000000013 /* Anta-Regular.ttf in Resources */,
+				A10000000000000000000014 /* OFL-Anta.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,7 +328,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A30000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000011 /* FlightWidget.swift in Sources */,
+				A10000000000000000000010 /* ContentView.swift in Sources */,
+				A1000000000000000000000F /* WidgetFlightSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A90000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000003 /* YaoguangWidget */;
+			targetProxy = A90000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A60000000000000000000001 /* Debug */ = {
@@ -309,6 +429,64 @@
 			};
 			name = Release;
 		};
+		A60000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A20000000000000000000009 /* Config/AppMetadata.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YaoguangWidget/YaoguangWidget.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
+				DEVELOPMENT_TEAM = 53Q9GARPRK;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YaoguangWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Flight;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.2;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yaoguang.app.FlightWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A60000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A20000000000000000000009 /* Config/AppMetadata.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = YaoguangWidget/YaoguangWidget.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(APP_BUILD)";
+				DEVELOPMENT_TEAM = 53Q9GARPRK;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = YaoguangWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Flight;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.2;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yaoguang.app.FlightWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -317,6 +495,15 @@
 			buildConfigurations = (
 				A60000000000000000000001 /* Debug */,
 				A60000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80000000000000000000003 /* Build configuration list for PBXNativeTarget "YaoguangWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A60000000000000000000005 /* Debug */,
+				A60000000000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
