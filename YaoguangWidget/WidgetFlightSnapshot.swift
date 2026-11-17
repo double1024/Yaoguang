@@ -61,6 +61,8 @@ enum WidgetSharedStorage {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecAttrAccessGroup as String: accessGroup,
+            // macOS 必须显式使用数据保护钥匙串，否则会落到登录钥匙串并弹密码框。
+            kSecUseDataProtectionKeychain as String: true,
         ]
     }
 
