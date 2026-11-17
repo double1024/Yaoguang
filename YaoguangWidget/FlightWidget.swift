@@ -27,16 +27,16 @@ struct FlightTimelineProvider: TimelineProvider {
 }
 
 extension WidgetFlightSnapshot {
-    /// 默认展示：香港快运航空 UO1800 香港环飞。
+    /// 无数据时的中性占位（不再回退默认航班）。
     static var sample: WidgetFlightSnapshot {
         WidgetFlightSnapshot(
             writtenAt: Date(),
-            origin: WidgetDefaultFlight.origin,
-            destination: WidgetDefaultFlight.destination,
-            airlineName: WidgetDefaultFlight.airlineName,
-            flightNumber: WidgetDefaultFlight.flightNumber,
-            aircraftType: WidgetDefaultFlight.aircraftType,
-            airlineLogoData: WidgetDefaultFlight.airlineLogoData()
+            origin: "-",
+            destination: "-",
+            airlineName: nil,
+            flightNumber: nil,
+            aircraftType: nil,
+            airlineLogoData: nil
         )
     }
 }

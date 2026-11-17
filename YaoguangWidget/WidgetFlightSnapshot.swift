@@ -36,19 +36,6 @@ struct WidgetFlightSnapshot: Codable, Equatable {
     }
 }
 
-enum WidgetDefaultFlight {
-    static let origin = "HKG"
-    static let destination = "HKG"
-    static let airlineName = "HK Express"
-    static let flightNumber = "UO1800"
-    static let aircraftType = "Airbus A320-271N"
-
-    /// 默认航司 logo（HKE），从小组件自带资源读取。
-    static func airlineLogoData() -> Data? {
-        guard let url = Bundle.main.url(forResource: "HKE", withExtension: "png") else { return nil }
-        return try? Data(contentsOf: url)
-    }
-}
 
 enum WidgetSharedStorage {
     static let service = "com.yaoguang.app.widget"

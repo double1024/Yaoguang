@@ -24,9 +24,6 @@ struct LiveAircraft: Identifiable {
     var trackDeg: Double?
     var baroAltitudeFt: Int32?
 
-    /// 默认航班占位行（HKE1800），不是真实接收到的飞机。
-    var isDefault = false
-
     var id: UInt32 { icao24 }
 }
 
@@ -34,13 +31,6 @@ struct LiveAircraft: Identifiable {
 final class ReceiverModel: ObservableObject {
     private let maxTrackedAircraft = 10
 
-    /// 默认占位航班：HKE1800，不查询 API。
-    static let defaultAircraft: LiveAircraft = {
-        var row = LiveAircraft(icao24: 0xFFFF_FFFE)
-        row.callsign = DefaultFlightProfile.callsignICAO
-        row.isDefault = true
-        return row
-    }()
     private let store: HistoryStore
     private let resolver: FlightInfoResolver
 
@@ -73,11 +63,6 @@ final class ReceiverModel: ObservableObject {
         aircraftByICAO.removeAll()
         aircraft = []
         lastSample.removeAll()
-        // 启动时注入 HKE1800，等同于收到一条包：之后按时间排序，满 10 条会被淘汰。
-        var seed = Self.defaultAircraft
-        seed.lastSeen = Date()
-        aircraftByICAO[seed.icao24] = seed
-        publishAircraftInRecentOrder()
         activeFlight.removeAll()
         guard let newHandle = yaoguang_start() else {
             status = "Unable to create receiver thread"
@@ -294,37 +279,39 @@ final class ReceiverModel: ObservableObject {
     /// 把最近一架飞机的展示信息写入 App Group，供小组件读取。
     /// 变更才写，且最多每 5 秒一次，避免高频磁盘写入。
     private func publishWidgetSnapshot() {
-        // 表格已按最近优先排序；取第一条呼号完整的行（可能是注入的 HKE1800）。
-        let validRow = aircraft.first { row in
-            let callsign = row.callsign?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return !callsign.isEmpty
+        // 从上到下（最近优先）挑选信息最完整的航班：
+        // 呼号 + 航线 + 机型 > 呼号 + 航线 > 呼号 + 机型 > 仅有呼号。
+        func trimmedCallsign(_ row: LiveAircraft) -> String {
+            (row.callsign ?? "").trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        }
+        let candidates = aircraft.filter { !trimmedCallsign($0).isEmpty }
+        guard !candidates.isEmpty else {
+            widgetStatus = "widget: 无有效航班"
+            return
         }
 
-        let callsign: String
-        let origin: String?
-        let destination: String?
-        let airline: String?
-        let aircraftType: String?
-        let designator: String?
-
-        if let validRow, !validRow.isDefault, let rawCallsign = validRow.callsign {
-            callsign = rawCallsign.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-            let route = resolver.routes[callsign]
-            origin = route?.origin?.iataCode ?? route?.origin?.icaoCode
-            destination = route?.destination?.iataCode ?? route?.destination?.icaoCode
-            airline = route?.airline?.name
-            let info = resolver.aircraftInfo[Self.hexString(validRow.icao24)]
-            aircraftType = info?.aircraftType ?? info?.icaoType
-            designator = route?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
-        } else {
-            // 没有真实航班时，用默认 HKE1800（静态，不查询 API）。
-            callsign = DefaultFlightProfile.callsignICAO
-            origin = DefaultFlightProfile.originIATA
-            destination = DefaultFlightProfile.destinationIATA
-            airline = DefaultFlightProfile.airlineName
-            aircraftType = DefaultFlightProfile.aircraftTypeShort
-            designator = DefaultFlightProfile.airlineICAO
+        func route(_ row: LiveAircraft) -> RouteInfo? { resolver.routes[trimmedCallsign(row)] }
+        func hasRoute(_ row: LiveAircraft) -> Bool {
+            guard let route = route(row) else { return false }
+            return route.origin != nil && route.destination != nil
         }
+        func hasType(_ row: LiveAircraft) -> Bool {
+            resolver.aircraftInfo[Self.hexString(row.icao24)] != nil
+        }
+
+        let chosen = candidates.first(where: { hasRoute($0) && hasType($0) })
+            ?? candidates.first(where: { hasRoute($0) })
+            ?? candidates.first(where: { hasType($0) })
+            ?? candidates[0]
+
+        let callsign = trimmedCallsign(chosen)
+        let routeInfo = route(chosen)
+        let origin = routeInfo?.origin?.iataCode ?? routeInfo?.origin?.icaoCode
+        let destination = routeInfo?.destination?.iataCode ?? routeInfo?.destination?.icaoCode
+        let airline = routeInfo?.airline?.name
+        let info = resolver.aircraftInfo[Self.hexString(chosen.icao24)]
+        let aircraftType = info?.aircraftType ?? info?.icaoType
+        let designator = routeInfo?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
 
         let logoData = Self.airlineLogoData(designator: designator)
         let key = [callsign, origin, destination, airline, aircraftType]
