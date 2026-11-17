@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 /// 主应用写入、小组件扩展读取的共享快照。
 ///
@@ -50,36 +51,28 @@ enum WidgetDefaultFlight {
 }
 
 enum WidgetSharedStorage {
-    static let fileName = "widget-flight.json"
+    static let service = "com.yaoguang.app.widget"
+    static let account = "flight-snapshot"
+    static let accessGroup = "53Q9GARPRK.yaoguang.shared"
 
-    /// App Group 容器根目录。
-    static func containerURL() -> URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.yaoguang.app")
-    }
-
-    /// 与主程序一致：容器的 Library/Application Support 子目录。
-    static func snapshotURL() -> URL? {
-        guard let container = containerURL() else { return nil }
-        return container
-            .appendingPathComponent("Library/Application Support", isDirectory: true)
-            .appendingPathComponent(fileName, isDirectory: false)
+    private static var baseQuery: [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: accessGroup,
+        ]
     }
 
     static func load() -> WidgetFlightSnapshot? {
-        guard let url = snapshotURL(), let data = try? Data(contentsOf: url) else { return nil }
+        var query = baseQuery
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+              let data = item as? Data else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
-        guard let snapshot = try? decoder.decode(WidgetFlightSnapshot.self, from: data),
-              snapshot.version == WidgetFlightSnapshot.schemaVersion else { return nil }
-        return snapshot
-    }
-
-    static func save(_ snapshot: WidgetFlightSnapshot) {
-        guard let url = snapshotURL() else { return }
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .millisecondsSince1970
-        guard let data = try? encoder.encode(snapshot) else { return }
-        // 原子写入，避免扩展读到半截文件。
-        try? data.write(to: url, options: .atomic)
+        return try? decoder.decode(WidgetFlightSnapshot.self, from: data)
     }
 }

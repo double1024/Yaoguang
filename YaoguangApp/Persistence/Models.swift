@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import SwiftData
 
 // MARK: - SwiftData 持久化模型
@@ -250,36 +251,56 @@ struct WidgetFlightSnapshot: Codable, Equatable {
 }
 
 enum WidgetSharedStorage {
-    static let fileName = "widget-flight.json"
+    /// 使用 Keychain 共享（免费账号下 App Group 运行时未授权）。
+    static let service = "com.yaoguang.app.widget"
+    static let account = "flight-snapshot"
+    static let accessGroup = "53Q9GARPRK.yaoguang.shared"
 
-    /// App Group 容器根目录。
-    static func containerURL() -> URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.yaoguang.app")
+    private static var baseQuery: [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecAttrAccessGroup as String: accessGroup,
+        ]
     }
 
     /// 写入快照。返回 nil 表示成功，否则返回错误描述。
     static func save(_ snapshot: WidgetFlightSnapshot) -> String? {
-        guard let container = containerURL() else {
-            return "App Group 容器不可用"
-        }
-        // 沙盒下容器根目录不一定可写，写到 Library/Application Support 子目录。
-        let directory = container.appendingPathComponent("Library/Application Support", isDirectory: true)
-        do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        } catch {
-            return "创建目录失败：\(error.localizedDescription)"
-        }
-        let url = directory.appendingPathComponent(fileName, isDirectory: false)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
-        guard let data = try? encoder.encode(snapshot) else {
-            return "编码失败"
-        }
-        do {
-            try data.write(to: url)
+        guard let data = try? encoder.encode(snapshot) else { return "编码失败" }
+
+        SecItemDelete(baseQuery as CFDictionary)
+        let status = add(data)
+        if status == errSecSuccess { return nil }
+
+        // 体积超限（带 logo 时可能超 4KB）：去掉 logo 再试。
+        var reduced = snapshot
+        reduced.airlineLogoData = nil
+        if let reducedData = try? encoder.encode(reduced), add(reducedData) == errSecSuccess {
             return nil
-        } catch {
-            return error.localizedDescription
         }
+        return "Keychain 写入失败 \(status)"
+    }
+
+    private static func add(_ data: Data) -> OSStatus {
+        var query = baseQuery
+        query[kSecValueData as String] = data
+        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        return SecItemAdd(query as CFDictionary, nil)
+    }
+
+    /// 读取快照（诊断/调试用）。
+    static func load() -> WidgetFlightSnapshot? {
+        var query = baseQuery
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+              let data = item as? Data else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+        return try? decoder.decode(WidgetFlightSnapshot.self, from: data)
     }
 }

@@ -8,9 +8,9 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
-	<key>com.apple.security.application-groups</key>
+	<key>keychain-access-groups</key>
 	<array>
-		<string>group.com.yaoguang.app</string>
+		<string>53Q9GARPRK.yaoguang.shared</string>
 	</array>
 </dict>
 </plist>

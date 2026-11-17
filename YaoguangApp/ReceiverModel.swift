@@ -294,11 +294,6 @@ final class ReceiverModel: ObservableObject {
     /// 把最近一架飞机的展示信息写入 App Group，供小组件读取。
     /// 变更才写，且最多每 5 秒一次，避免高频磁盘写入。
     private func publishWidgetSnapshot() {
-        guard WidgetSharedStorage.containerURL() != nil else {
-            widgetStatus = "widget: App Group 不可用"
-            return
-        }
-
         // 表格已按最近优先排序；取第一条呼号完整的行（可能是注入的 HKE1800）。
         let validRow = aircraft.first { row in
             let callsign = row.callsign?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
