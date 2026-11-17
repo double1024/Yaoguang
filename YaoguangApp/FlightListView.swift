@@ -23,7 +23,7 @@ struct FlightListView: View {
                     .alignment(.leading)
 
                     TableColumn(columnTitle("ICAO")) { aircraft in
-                        Text(String(format: "%06X", aircraft.icao24))
+                        Text(aircraft.isDefault ? "-" : String(format: "%06X", aircraft.icao24))
                             .font(.system(size: 12))
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
@@ -119,7 +119,7 @@ struct FlightListView: View {
         let isUnknown = callsign == nil || callsign?.isEmpty == true
 
         return Button {
-            guard let callsign, !isUnknown else { return }
+            guard let callsign, !isUnknown, !aircraft.isDefault else { return }
             editingCallsign = callsign
         } label: {
             HStack(spacing: 6) {
@@ -139,7 +139,12 @@ struct FlightListView: View {
 
     @ViewBuilder
     private func routeCell(_ aircraft: LiveAircraft) -> some View {
-        if let route = routeInfo(for: aircraft),
+        if aircraft.isDefault {
+            Text("\(DefaultFlightProfile.originIATA) → \(DefaultFlightProfile.destinationIATA)")
+                .font(.system(size: 12))
+                .monospacedDigit()
+                .help("\(DefaultFlightProfile.originNameLocalized) → \(DefaultFlightProfile.destinationNameLocalized)")
+        } else if let route = routeInfo(for: aircraft),
                   let origin = route.origin?.iataCode, let destination = route.destination?.iataCode {
             Text("\(origin) → \(destination)")
                 .font(.system(size: 12))

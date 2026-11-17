@@ -24,12 +24,23 @@ struct LiveAircraft: Identifiable {
     var trackDeg: Double?
     var baroAltitudeFt: Int32?
 
+    /// 启动时注入的 HKE1800 种子行（不查询 API）。
+    var isDefault = false
+
     var id: UInt32 { icao24 }
 }
 
 @MainActor
 final class ReceiverModel: ObservableObject {
     private let maxTrackedAircraft = 10
+
+    /// 启动时注入的 HKE1800，等同收到一条包。
+    static let defaultAircraft: LiveAircraft = {
+        var row = LiveAircraft(icao24: 0xFFFF_FFFE)
+        row.callsign = DefaultFlightProfile.callsignICAO
+        row.isDefault = true
+        return row
+    }()
 
     private let store: HistoryStore
     private let resolver: FlightInfoResolver
@@ -64,6 +75,11 @@ final class ReceiverModel: ObservableObject {
         aircraft = []
         lastSample.removeAll()
         activeFlight.removeAll()
+        // 启动即注入 HKE1800，之后与真实飞机一起按时间排序、满 10 条淘汰。
+        var seed = Self.defaultAircraft
+        seed.lastSeen = Date()
+        aircraftByICAO[seed.icao24] = seed
+        publishAircraftInRecentOrder()
         guard let newHandle = yaoguang_start() else {
             status = "Unable to create receiver thread"
             return
@@ -304,14 +320,30 @@ final class ReceiverModel: ObservableObject {
             ?? candidates.first(where: { hasType($0) })
             ?? candidates[0]
 
-        let callsign = trimmedCallsign(chosen)
-        let routeInfo = route(chosen)
-        let origin = routeInfo?.origin?.iataCode ?? routeInfo?.origin?.icaoCode
-        let destination = routeInfo?.destination?.iataCode ?? routeInfo?.destination?.icaoCode
-        let airline = routeInfo?.airline?.name
-        let info = resolver.aircraftInfo[Self.hexString(chosen.icao24)]
-        let aircraftType = info?.aircraftType ?? info?.icaoType
-        let designator = routeInfo?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
+        let callsign: String
+        let origin: String?
+        let destination: String?
+        let airline: String?
+        let aircraftType: String?
+        let designator: String?
+
+        if chosen.isDefault {
+            callsign = DefaultFlightProfile.callsignICAO
+            origin = DefaultFlightProfile.originIATA
+            destination = DefaultFlightProfile.destinationIATA
+            airline = DefaultFlightProfile.airlineName
+            aircraftType = DefaultFlightProfile.aircraftTypeShort
+            designator = DefaultFlightProfile.airlineICAO
+        } else {
+            callsign = trimmedCallsign(chosen)
+            let routeInfo = route(chosen)
+            origin = routeInfo?.origin?.iataCode ?? routeInfo?.origin?.icaoCode
+            destination = routeInfo?.destination?.iataCode ?? routeInfo?.destination?.icaoCode
+            airline = routeInfo?.airline?.name
+            let info = resolver.aircraftInfo[Self.hexString(chosen.icao24)]
+            aircraftType = info?.aircraftType ?? info?.icaoType
+            designator = routeInfo?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
+        }
 
         let logoData = Self.airlineLogoData(designator: designator)
         let key = [callsign, origin, destination, airline, aircraftType]
