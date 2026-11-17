@@ -24,16 +24,34 @@ struct LiveAircraft: Identifiable {
     var trackDeg: Double?
     var baroAltitudeFt: Int32?
 
+    /// 默认航班占位行（HKE1800），不是真实接收到的飞机。
+    var isDefault = false
+
     var id: UInt32 { icao24 }
 }
 
 @MainActor
 final class ReceiverModel: ObservableObject {
     private let maxTrackedAircraft = 10
+
+    /// 默认占位航班：HKE1800，不查询 API。
+    static let defaultAircraft: LiveAircraft = {
+        var row = LiveAircraft(icao24: 0xFFFF_FFFE)
+        row.callsign = DefaultFlightProfile.callsignICAO
+        row.isDefault = true
+        return row
+    }()
     private let store: HistoryStore
     private let resolver: FlightInfoResolver
 
     @Published private(set) var aircraft: [LiveAircraft] = []
+
+    /// 表格行：默认航班固定第一行，其后是真实飞机，最多 10 行。
+    var displayRows: [LiveAircraft] {
+        var rows = [Self.defaultAircraft]
+        rows.append(contentsOf: aircraft.prefix(maxTrackedAircraft - 1))
+        return rows
+    }
     @Published private(set) var status = "Receiver not started"
     @Published private(set) var validPacketCount: UInt64 = 0
     /// 小组件快照的写入状态，便于排查「小组件不更新」。
@@ -277,57 +295,65 @@ final class ReceiverModel: ObservableObject {
     /// 把最近一架飞机的展示信息写入 App Group，供小组件读取。
     /// 变更才写，且最多每 5 秒一次，避免高频磁盘写入。
     private func publishWidgetSnapshot() {
-        guard let latest = aircraft.first else {
-            widgetStatus = "widget: 无飞机"
-            return
-        }
-        guard let callsign = latest.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
-              !callsign.isEmpty else {
-            widgetStatus = "widget: 无呼号"
-            return
-        }
-
-        // 明确区分「App Group 不可用」与「还没解析出航线」。
         guard WidgetSharedStorage.containerURL() != nil else {
             widgetStatus = "widget: App Group 不可用"
             return
         }
 
-        let route = resolver.routes[callsign]
-        let info = resolver.aircraftInfo[Self.hexString(latest.icao24)]
+        // 按表格顺序，跳过默认占位行，取第一条呼号完整的真实飞机。
+        let validRow = displayRows.first { row in
+            guard !row.isDefault else { return false }
+            let callsign = row.callsign?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return !callsign.isEmpty
+        }
 
-        let origin = route?.origin?.iataCode ?? route?.origin?.icaoCode
-        let destination = route?.destination?.iataCode ?? route?.destination?.icaoCode
-        let airline = route?.airline?.name
-        let flightNumber = callsign
-        let aircraftType = info?.aircraftType ?? info?.icaoType
+        let callsign: String
+        let origin: String?
+        let destination: String?
+        let airline: String?
+        let aircraftType: String?
+        let designator: String?
 
-        // 只要有呼号就更新小组件；航线/机型缺失时用 "-" 占位。
-        // 例：HKE1800 在 adsbdb 无航线记录（404），旧逻辑会永远卡住。
+        if let validRow, let rawCallsign = validRow.callsign {
+            callsign = rawCallsign.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            let route = resolver.routes[callsign]
+            origin = route?.origin?.iataCode ?? route?.origin?.icaoCode
+            destination = route?.destination?.iataCode ?? route?.destination?.icaoCode
+            airline = route?.airline?.name
+            let info = resolver.aircraftInfo[Self.hexString(validRow.icao24)]
+            aircraftType = info?.aircraftType ?? info?.icaoType
+            designator = route?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
+        } else {
+            // 没有真实航班时，用默认 HKE1800（静态，不查询 API）。
+            callsign = DefaultFlightProfile.callsignICAO
+            origin = DefaultFlightProfile.originIATA
+            destination = DefaultFlightProfile.destinationIATA
+            airline = DefaultFlightProfile.airlineName
+            aircraftType = DefaultFlightProfile.aircraftTypeShort
+            designator = DefaultFlightProfile.airlineICAO
+        }
 
-        let designator = route?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
         let logoData = Self.airlineLogoData(designator: designator)
-
-        let key = [origin, destination, airline, flightNumber, aircraftType, logoData?.base64EncodedString() ?? ""]
+        let key = [callsign, origin, destination, airline, aircraftType]
             .map { $0 ?? "" }.joined(separator: "|")
         guard key != lastWidgetKey || Date().timeIntervalSince(lastWidgetWrite) >= 5 else { return }
         lastWidgetKey = key
         lastWidgetWrite = Date()
 
-        let saved = WidgetSharedStorage.save(WidgetFlightSnapshot(
+        let saveError = WidgetSharedStorage.save(WidgetFlightSnapshot(
             writtenAt: Date(),
             origin: origin ?? "-",
             destination: destination ?? "-",
             airlineName: airline,
-            flightNumber: flightNumber,
+            flightNumber: callsign,
             aircraftType: aircraftType,
             airlineLogoData: logoData
         ))
-        if saved {
+        if let saveError {
+            widgetStatus = "widget: 写入失败 \(saveError)"
+        } else {
             WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
             widgetStatus = "widget: 已更新 \(callsign)"
-        } else {
-            widgetStatus = "widget: 写入失败"
         }
     }
 

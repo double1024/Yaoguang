@@ -251,37 +251,35 @@ struct WidgetFlightSnapshot: Codable, Equatable {
 
 enum WidgetSharedStorage {
     static let fileName = "widget-flight.json"
-    static let directoryName = "Yaoguang"
 
-    /// App Group 容器：group.com.yaoguang.app/widget-flight.json
+    /// App Group 容器根目录。
     static func containerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.yaoguang.app")
     }
 
-    static func snapshotURL() -> URL? {
-        containerURL()?.appendingPathComponent(fileName, isDirectory: false)
-    }
-
-    /// 写入快照。返回是否真正落盘，便于界面显示真实结果。
-    @discardableResult
-    static func save(_ snapshot: WidgetFlightSnapshot) -> Bool {
-        guard let url = snapshotURL() else {
-            print("[widget] 共享目录不可用")
-            return false
+    /// 写入快照。返回 nil 表示成功，否则返回错误描述。
+    static func save(_ snapshot: WidgetFlightSnapshot) -> String? {
+        guard let container = containerURL() else {
+            return "App Group 容器不可用"
         }
+        // 沙盒下容器根目录不一定可写，写到 Library/Application Support 子目录。
+        let directory = container.appendingPathComponent("Library/Application Support", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        } catch {
+            return "创建目录失败：\(error.localizedDescription)"
+        }
+        let url = directory.appendingPathComponent(fileName, isDirectory: false)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
         guard let data = try? encoder.encode(snapshot) else {
-            print("[widget] 编码快照失败")
-            return false
+            return "编码失败"
         }
         do {
-            try data.write(to: url, options: .atomic)
-            print("[widget] 已写入 \(url.path)")
-            return true
+            try data.write(to: url)
+            return nil
         } catch {
-            print("[widget] 写入失败：\(error)")
-            return false
+            return error.localizedDescription
         }
     }
 }

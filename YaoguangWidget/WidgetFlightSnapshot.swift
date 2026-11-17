@@ -51,15 +51,18 @@ enum WidgetDefaultFlight {
 
 enum WidgetSharedStorage {
     static let fileName = "widget-flight.json"
-    static let directoryName = "Yaoguang"
 
-    /// App Group 容器：group.com.yaoguang.app/widget-flight.json
+    /// App Group 容器根目录。
     static func containerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.yaoguang.app")
     }
 
+    /// 与主程序一致：容器的 Library/Application Support 子目录。
     static func snapshotURL() -> URL? {
-        containerURL()?.appendingPathComponent(fileName, isDirectory: false)
+        guard let container = containerURL() else { return nil }
+        return container
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+            .appendingPathComponent(fileName, isDirectory: false)
     }
 
     static func load() -> WidgetFlightSnapshot? {
