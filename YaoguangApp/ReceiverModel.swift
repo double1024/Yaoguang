@@ -296,9 +296,10 @@ final class ReceiverModel: ObservableObject {
         let flightNumber = callsign
         let aircraftType = info?.aircraftType ?? info?.icaoType
 
-        // 只有航线真正解析出来（起降地都拿到）才更新小组件；否则保留上一次显示。
-        guard let origin, let destination else {
-            widgetStatus = "widget: 等待航线（\(callsign)）"
+        // 只要拿到呼号，并且航线或机型任一项已解析，就更新小组件；
+        // 缺失的航线用 "-" 占位，避免一直卡在等待航线。
+        guard origin != nil || destination != nil || aircraftType != nil else {
+            widgetStatus = "widget: 等待航线/机型（\(callsign)）"
             return
         }
 
@@ -313,16 +314,16 @@ final class ReceiverModel: ObservableObject {
 
         WidgetSharedStorage.save(WidgetFlightSnapshot(
             writtenAt: Date(),
-            origin: origin,
-            destination: destination,
+            origin: origin ?? "-",
+            destination: destination ?? "-",
             airlineName: airline,
             flightNumber: flightNumber,
             aircraftType: aircraftType,
             airlineLogoData: logoData
         ))
         WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
-        widgetStatus = "widget: 已更新 \(callsign) \(origin)→\(destination)"
-        print("[widget] snapshot written: \(callsign) \(origin)->\(destination)")
+        widgetStatus = "widget: 已更新 \(callsign)"
+        print("[widget] snapshot written: \(callsign) \(origin ?? "-")->\(destination ?? "-") type=\(aircraftType ?? "-")")
     }
 
     /// 从呼号取三字 ICAO 航司码（如 "HKE1800" → "HKE"）。

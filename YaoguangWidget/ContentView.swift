@@ -6,7 +6,7 @@ import CoreText
 ///
 /// - 玻璃卡片背景（macOS 26+ glassEffect，自动适配深/浅色）
 /// - 中央 barcode 装饰条 + 航线大字
-/// - 顶部航司 logo + 名称，底部航班号 + 机型
+/// - 顶部航司 logo + 名称，底部航班号 + 机型（居中）
 struct ContentView: View {
     let flight: FlightCardData
     @Environment(\.colorScheme) private var colorScheme
@@ -22,13 +22,9 @@ struct ContentView: View {
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 21.67, style: .continuous))
 
             // 2. barcode 装饰条（登机牌风格，居中）
-            Image("barcode_bg")
-                .resizable()
-                .frame(width: 329, height: 64)
-                .frame(maxHeight: .infinity, alignment: .center)
-                .opacity(0.9)
+            barcodeBand
 
-            // 3. 内容：上（logo+名称）/ 中（航线）/ 下（航班号+机型）
+            // 3. 内容
             VStack(spacing: 0) {
                 header
                 Spacer(minLength: 0)
@@ -41,6 +37,31 @@ struct ContentView: View {
         }
         .frame(width: 329, height: 155)
         .clipShape(RoundedRectangle(cornerRadius: 21.67, style: .continuous))
+    }
+
+    // MARK: - barcode 条
+
+    /// 原始 barcode_bg.png 的 alpha 只有 13（约 5%），几乎不可见，
+    /// 因此使用提亮版 barcode_bg_visible.png，并用 opacity 控制最终强度。
+    @ViewBuilder
+    private var barcodeBand: some View {
+        if let image = Self.bundleImage(named: "barcode_bg_visible") {
+            Image(nsImage: image)
+                .resizable()
+                .frame(width: 329, height: 64)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .opacity(colorScheme == .dark ? 0.22 : 0.28)
+                .blendMode(colorScheme == .dark ? .screen : .multiply)
+                .allowsHitTesting(false)
+        }
+    }
+
+    private static func bundleImage(named name: String) -> NSImage? {
+        if let url = Bundle.main.url(forResource: name, withExtension: "png"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return NSImage(named: name)
     }
 
     // MARK: - 三个区块
@@ -73,6 +94,7 @@ struct ContentView: View {
         .minimumScaleFactor(0.5)
     }
 
+    /// 航班号 + 机型，整行居中。
     private var footer: some View {
         HStack(spacing: 42) {
             if let flightNumber = flight.flightNumberText {
@@ -87,8 +109,8 @@ struct ContentView: View {
                     .foregroundColor(detailColor)
                     .lineLimit(1)
             }
-            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     // MARK: - 航司 logo
@@ -141,8 +163,8 @@ struct ContentView: View {
 
 /// 卡片展示所需的字段。缺失数据不显示占位符。
 struct FlightCardData: Equatable {
-    var origin: String = "---"
-    var destination: String = "---"
+    var origin: String = "-"
+    var destination: String = "-"
     var airlineName: String?
     var flightNumberText: String?
     var aircraftText: String?

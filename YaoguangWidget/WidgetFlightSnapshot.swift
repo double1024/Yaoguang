@@ -19,8 +19,8 @@ struct WidgetFlightSnapshot: Codable, Equatable {
 
     var cardData: FlightCardData {
         FlightCardData(
-            origin: normalized(origin) ?? "---",
-            destination: normalized(destination) ?? "---",
+            origin: normalized(origin) ?? "-",
+            destination: normalized(destination) ?? "-",
             airlineName: normalized(airlineName),
             flightNumberText: normalized(flightNumber).map { "Flight \($0)" },
             aircraftText: normalized(aircraftType).map { $0 },
