@@ -38,28 +38,48 @@ struct WidgetFlightSnapshot: Codable, Equatable {
 
 
 enum WidgetSharedStorage {
-    static let service = "com.yaoguang.app.widget"
-    static let account = "flight-snapshot"
-    static let accessGroup = "53Q9GARPRK.yaoguang.shared"
+    static let appGroupIdentifier = "53Q9GARPRK.com.yaoguang.shared"
+    static let fileName = "widget-flight.json"
 
-    private static var baseQuery: [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecAttrAccessGroup as String: accessGroup,
-            // macOS 必须显式使用数据保护钥匙串，否则会落到登录钥匙串并弹密码框。
-            kSecUseDataProtectionKeychain as String: true,
-        ]
+    private static let keychainService = "com.yaoguang.app.widget"
+    private static let keychainAccount = "flight-snapshot"
+    private static let keychainAccessGroup = "53Q9GARPRK.yaoguang.shared"
+
+    static func containerURL() -> URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
+    }
+
+    private static func snapshotURL() -> URL? {
+        guard let container = containerURL() else { return nil }
+        return container
+            .appendingPathComponent("Library/Application Support", isDirectory: true)
+            .appendingPathComponent(fileName, isDirectory: false)
     }
 
     static func load() -> WidgetFlightSnapshot? {
-        var query = baseQuery
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        if let url = snapshotURL(), let data = try? Data(contentsOf: url), let snapshot = decode(data) {
+            return snapshot
+        }
+        return loadFromKeychain()
+    }
+
+    private static func loadFromKeychain() -> WidgetFlightSnapshot? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: keychainAccount,
+            kSecAttrAccessGroup as String: keychainAccessGroup,
+            kSecUseDataProtectionKeychain as String: true,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
         var item: CFTypeRef?
         guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
               let data = item as? Data else { return nil }
+        return decode(data)
+    }
+
+    private static func decode(_ data: Data) -> WidgetFlightSnapshot? {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
         return try? decoder.decode(WidgetFlightSnapshot.self, from: data)
