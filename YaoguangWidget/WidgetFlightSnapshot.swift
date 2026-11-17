@@ -3,9 +3,9 @@ import Foundation
 /// 主应用写入、小组件扩展读取的共享快照。
 ///
 /// 扩展是独立进程，不能直接访问主应用的 SwiftData 存储；主应用把最新一架飞机
-/// 的展示字段写成 JSON，扩展按需读取。
+/// 的展示字段（含航司 logo 的 PNG 数据）写成 JSON，扩展按需读取。
 struct WidgetFlightSnapshot: Codable, Equatable {
-    static let schemaVersion = 1
+    static let schemaVersion = 2
 
     var version: Int = WidgetFlightSnapshot.schemaVersion
     var writtenAt: Date
@@ -14,14 +14,17 @@ struct WidgetFlightSnapshot: Codable, Equatable {
     var airlineName: String?
     var flightNumber: String?
     var aircraftType: String?
+    /// 航司 logo 的 PNG 数据（由主应用从 flightaware_logos 读取后嵌入）。
+    var airlineLogoData: Data?
 
     var cardData: FlightCardData {
         FlightCardData(
             origin: normalized(origin) ?? "---",
             destination: normalized(destination) ?? "---",
             airlineName: normalized(airlineName),
-            flightNumberText: normalized(flightNumber).map { "Flight No. \($0)" },
-            aircraftText: normalized(aircraftType).map { "Aircraft: \($0)" }
+            flightNumberText: normalized(flightNumber).map { "Flight \($0)" },
+            aircraftText: normalized(aircraftType).map { $0 },
+            airlineLogoData: airlineLogoData
         )
     }
 
@@ -37,7 +40,13 @@ enum WidgetDefaultFlight {
     static let destination = "HKG"
     static let airlineName = "HK Express"
     static let flightNumber = "UO1800"
-    static let aircraftType = "A320neo"
+    static let aircraftType = "Airbus A320-271N"
+
+    /// 默认航司 logo（HKE），从小组件自带资源读取。
+    static func airlineLogoData() -> Data? {
+        guard let url = Bundle.main.url(forResource: "HKE", withExtension: "png") else { return nil }
+        return try? Data(contentsOf: url)
+    }
 }
 
 enum WidgetSharedStorage {

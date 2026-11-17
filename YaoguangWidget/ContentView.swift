@@ -1,110 +1,136 @@
 import SwiftUI
+import AppKit
 import CoreText
 
-/// 329 × 155 飞行卡片。
+/// 329 × 155 登机牌风格飞行卡片。
 ///
-/// 布局、偏移、配色与字号与设计稿一致；色块按设计意图叠在航线文字之上，形成半透明压色效果。
-/// 仅次要点做了可用性处理：尺寸随容器自适应、字体运行时注册、缺失数据时不显示占位文字。
+/// - 玻璃卡片背景（macOS 26+ glassEffect，自动适配深/浅色）
+/// - 中央 barcode 装饰条 + 航线大字
+/// - 顶部航司 logo + 名称，底部航班号 + 机型
 struct ContentView: View {
     let flight: FlightCardData
+    @Environment(\.colorScheme) private var colorScheme
 
-    private static let accent = Color(red: 0.50, green: 0.23, blue: 0.27).opacity(0.50)
-    private static let routeGreen = Color(red: 0.08, green: 0.50, blue: 0.24)
-    private static let airlineGray = Color(red: 0.45, green: 0.45, blue: 0.45)
-    private static let detailGold = Color(red: 0.60, green: 0.48, blue: 0.17)
+    private static let displayFont = "Staatliches"
+    private static let detailFont = "Anta"
 
     var body: some View {
-        // 以 329 × 155 为设计基准，按实际可用尺寸等比缩放。
-        GeometryReader { proxy in
-            let scale = min(proxy.size.width / 329, proxy.size.height / 155)
-            card
-                .frame(width: 329, height: 155)
-                .scaleEffect(scale, anchor: .center)
-                .frame(width: proxy.size.width, height: proxy.size.height)
+        ZStack {
+            // 1. 玻璃卡片背景
+            RoundedRectangle(cornerRadius: 21.67, style: .continuous)
+                .fill(.regularMaterial)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 21.67, style: .continuous))
+
+            // 2. barcode 装饰条（登机牌风格，居中）
+            Image("barcode_bg")
+                .resizable()
+                .frame(width: 329, height: 64)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .opacity(0.9)
+
+            // 3. 内容：上（logo+名称）/ 中（航线）/ 下（航班号+机型）
+            VStack(spacing: 0) {
+                header
+                Spacer(minLength: 0)
+                route
+                Spacer(minLength: 0)
+                footer
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
         }
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+        .frame(width: 329, height: 155)
         .clipShape(RoundedRectangle(cornerRadius: 21.67, style: .continuous))
     }
 
-    private var card: some View {
-        ZStack {
-            // 1. 白色卡面
-            Rectangle()
-                .foregroundColor(.clear)
-                .frame(width: 329, height: 155)
-                .background(.white)
-                .cornerRadius(21.67)
-                .offset(x: 0, y: 0)
+    // MARK: - 三个区块
 
-            // 2. 航司 logo 占位 + 航司名
-            HStack(spacing: 15) {
-                airlineMark
-                if let airline = flight.airlineName {
-                    Text(airline)
-                        .font(.custom(Self.displayFont, size: 20))
-                        .foregroundColor(Self.airlineGray)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
+    private var header: some View {
+        HStack(spacing: 10) {
+            logo
+            if let name = flight.airlineName {
+                Text(name)
+                    .font(.custom(Self.displayFont, size: 18))
+                    .foregroundColor(airlineNameColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
-            .frame(width: 277)
-            .offset(x: -6, y: -47.50)
-
-            // 3. 底部两行：航班号 / 机型
-            HStack(spacing: 42) {
-                if let flightNumber = flight.flightNumberText {
-                    Text(flightNumber)
-                        .font(.custom(Self.detailFont, size: 12))
-                        .foregroundColor(Self.detailGold)
-                        .lineLimit(1)
-                }
-                if let aircraft = flight.aircraftText {
-                    Text(aircraft)
-                        .font(.custom(Self.detailFont, size: 12))
-                        .foregroundColor(Self.detailGold)
-                        .lineLimit(1)
-                }
-            }
-            .offset(x: 2.50, y: 51)
-
-            // 4. 航线：两端 64pt，箭头 48pt
-            HStack(spacing: 0) {
-                Text(flight.origin)
-                    .font(.custom(Self.displayFont, size: 64))
-                Text("-->")
-                    .font(.custom(Self.displayFont, size: 48))
-                Text(flight.destination)
-                    .font(.custom(Self.displayFont, size: 64))
-            }
-            .foregroundColor(Self.routeGreen)
-            .lineLimit(1)
-            .minimumScaleFactor(0.5)
-            .offset(x: 0, y: 6)
-
-            // 5. 半透明色块：叠在航线文字之上（设计意图）
-            Rectangle()
-                .foregroundColor(.clear)
-                .frame(width: 329, height: 64)
-                .background(Self.accent)
-                .offset(x: 0, y: 2.50)
+            Spacer(minLength: 0)
         }
-        .frame(width: 329, height: 155)
-        .background(Color(red: 1, green: 1, blue: 1).opacity(0.40))
     }
 
-    private var airlineMark: some View {
-        Rectangle()
-            .foregroundColor(.clear)
-            .frame(width: 30, height: 30)
-            .background(Self.accent)
+    private var route: some View {
+        HStack(spacing: 0) {
+            Text(flight.origin)
+                .font(.custom(Self.displayFont, size: 56))
+            Text(" --> ")
+                .font(.custom(Self.displayFont, size: 38))
+            Text(flight.destination)
+                .font(.custom(Self.displayFont, size: 56))
+        }
+        .foregroundColor(routeColor)
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
     }
 
-    // MARK: - 字体
+    private var footer: some View {
+        HStack(spacing: 42) {
+            if let flightNumber = flight.flightNumberText {
+                Text(flightNumber)
+                    .font(.custom(Self.detailFont, size: 12))
+                    .foregroundColor(detailColor)
+                    .lineLimit(1)
+            }
+            if let aircraft = flight.aircraftText {
+                Text(aircraft)
+                    .font(.custom(Self.detailFont, size: 12))
+                    .foregroundColor(detailColor)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+    }
 
-    static let displayFont = "Staatliches"
-    static let detailFont = "Anta"
+    // MARK: - 航司 logo
 
-    /// 小组件扩展进程需要显式注册字体；失败时回退系统字体，避免文字消失。
+    @ViewBuilder
+    private var logo: some View {
+        if let data = flight.airlineLogoData, let image = NSImage(data: data) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
+        } else {
+            Image(systemName: "airplane")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+        }
+    }
+
+    // MARK: - 自适应颜色
+
+    private var routeColor: Color {
+        colorScheme == .dark
+            ? Color(red: 0.46, green: 0.84, blue: 0.58)
+            : Color(red: 0.08, green: 0.50, blue: 0.24)
+    }
+
+    private var detailColor: Color {
+        colorScheme == .dark
+            ? Color(red: 0.86, green: 0.74, blue: 0.36)
+            : Color(red: 0.60, green: 0.48, blue: 0.17)
+    }
+
+    private var airlineNameColor: Color {
+        colorScheme == .dark
+            ? Color.white.opacity(0.75)
+            : Color(red: 0.45, green: 0.45, blue: 0.45)
+    }
+
+    // MARK: - 字体注册
+
+    /// 小组件扩展进程需要显式注册字体；失败时回退系统字体。
     static func registerFonts() {
         for name in ["Staatliches-Regular", "Anta-Regular"] {
             guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
@@ -113,11 +139,12 @@ struct ContentView: View {
     }
 }
 
-/// 卡片展示所需的字段。缺失数据不显示占位符，避免出现 "Unknown"。
+/// 卡片展示所需的字段。缺失数据不显示占位符。
 struct FlightCardData: Equatable {
     var origin: String = "---"
     var destination: String = "---"
     var airlineName: String?
     var flightNumberText: String?
     var aircraftText: String?
+    var airlineLogoData: Data?
 }

@@ -28,6 +28,8 @@
 		A10000000000000000000012 /* Staatliches-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* Staatliches-Regular.ttf */; };
 		A10000000000000000000013 /* Anta-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* Anta-Regular.ttf */; };
 		A10000000000000000000014 /* OFL-Anta.txt in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* OFL-Anta.txt */; };
+		A10000000000000000000017 /* barcode_bg.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* barcode_bg.png */; };
+		A10000000000000000000018 /* HKE.png in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* HKE.png */; };
 		A10000000000000000000015 /* YaoguangWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* YaoguangWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -94,6 +96,8 @@
 		A2000000000000000000001F /* Anta-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Anta-Regular.ttf"; sourceTree = "<group>"; };
 		A20000000000000000000020 /* OFL-Anta.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-Anta.txt"; sourceTree = "<group>"; };
 		A20000000000000000000021 /* YaoguangWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = YaoguangWidget.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000023 /* barcode_bg.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "barcode_bg.png"; sourceTree = "<group>"; };
+		A20000000000000000000024 /* HKE.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "HKE.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -184,6 +188,8 @@
 				A2000000000000000000001E /* Staatliches-Regular.ttf */,
 				A2000000000000000000001F /* Anta-Regular.ttf */,
 				A20000000000000000000020 /* OFL-Anta.txt */,
+				A20000000000000000000023 /* barcode_bg.png */,
+				A20000000000000000000024 /* HKE.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -285,6 +291,8 @@
 				A10000000000000000000012 /* Staatliches-Regular.ttf in Resources */,
 				A10000000000000000000013 /* Anta-Regular.ttf in Resources */,
 				A10000000000000000000014 /* OFL-Anta.txt in Resources */,
+				A10000000000000000000017 /* barcode_bg.png in Resources */,
+				A10000000000000000000018 /* HKE.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

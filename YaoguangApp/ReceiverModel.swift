@@ -275,9 +275,11 @@ final class ReceiverModel: ObservableObject {
     /// 把最近一架飞机的展示信息写入 App Group，供小组件读取。
     /// 变更才写，且最多每 5 秒一次，避免高频磁盘写入。
     private func publishWidgetSnapshot() {
-        guard let latest = aircraft.first else { return }
-        let callsign = latest.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        let route = callsign.flatMap { resolver.routes[$0] }
+        guard let latest = aircraft.first,
+              let callsign = latest.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+              !callsign.isEmpty else { return }
+
+        let route = resolver.routes[callsign]
         let info = resolver.aircraftInfo[Self.hexString(latest.icao24)]
 
         let origin = route?.origin?.iataCode ?? route?.origin?.icaoCode
@@ -286,7 +288,13 @@ final class ReceiverModel: ObservableObject {
         let flightNumber = callsign
         let aircraftType = info?.aircraftType ?? info?.icaoType
 
-        let key = [origin, destination, airline, flightNumber, aircraftType]
+        // 只有航线真正解析出来（起降地都拿到）才更新小组件；否则保留上一次显示。
+        guard let origin, let destination else { return }
+
+        let designator = route?.airline?.icaoCode ?? Self.airlineDesignator(callsign)
+        let logoData = Self.airlineLogoData(designator: designator)
+
+        let key = [origin, destination, airline, flightNumber, aircraftType, logoData?.base64EncodedString() ?? ""]
             .map { $0 ?? "" }.joined(separator: "|")
         guard key != lastWidgetKey || Date().timeIntervalSince(lastWidgetWrite) >= 5 else { return }
         lastWidgetKey = key
@@ -298,10 +306,28 @@ final class ReceiverModel: ObservableObject {
             destination: destination,
             airlineName: airline,
             flightNumber: flightNumber,
-            aircraftType: aircraftType
+            aircraftType: aircraftType,
+            airlineLogoData: logoData
         ))
         WidgetCenter.shared.reloadTimelines(ofKind: "FlightWidget")
     }
+
+    /// 从呼号取三字 ICAO 航司码（如 "HKE1800" → "HKE"）。
+    private static func airlineDesignator(_ callsign: String) -> String? {
+        guard callsign.count >= 3 else { return nil }
+        return String(callsign.prefix(3))
+    }
+
+    /// 从 flightaware_logos 读取航司 logo 的 PNG 数据。
+    private static func airlineLogoData(designator: String?) -> Data? {
+        guard let designator else { return nil }
+        let code = String(designator.prefix(3)).uppercased()
+        guard let url = Bundle.main.url(forResource: code, withExtension: "png", subdirectory: "flightaware_logos") else {
+            return nil
+        }
+        return try? Data(contentsOf: url)
+    }
+
 
     private static func hexString(_ icao24: UInt32) -> String {
         String(format: "%06X", icao24)

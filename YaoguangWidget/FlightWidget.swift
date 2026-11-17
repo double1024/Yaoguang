@@ -35,7 +35,8 @@ extension WidgetFlightSnapshot {
             destination: WidgetDefaultFlight.destination,
             airlineName: WidgetDefaultFlight.airlineName,
             flightNumber: WidgetDefaultFlight.flightNumber,
-            aircraftType: WidgetDefaultFlight.aircraftType
+            aircraftType: WidgetDefaultFlight.aircraftType,
+            airlineLogoData: WidgetDefaultFlight.airlineLogoData()
         )
     }
 }
