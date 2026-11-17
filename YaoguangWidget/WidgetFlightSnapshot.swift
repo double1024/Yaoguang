@@ -16,6 +16,8 @@ struct WidgetFlightSnapshot: Codable, Equatable {
     var aircraftType: String?
     /// 飞机制造商（如 Airbus）。
     var manufacturer: String?
+    /// 演示模式开关：为 true 时小组件忽略此快照内容，改用内置演示数据轮播。
+    var demoMode: Bool?
     /// 航司 logo 的 PNG 数据（由主应用从 flightaware_logos 读取后嵌入）。
     var airlineLogoData: Data?
 

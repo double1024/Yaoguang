@@ -41,9 +41,21 @@ struct YaoguangApp: App {
 struct ReceiverSettingsView: View {
     @ObservedObject var receiver: ReceiverModel
     @AppStorage("lookupPriority") private var priorityRaw: String = LookupPriority.databaseFirst.rawValue
+    @AppStorage("demoModeEnabled") private var demoModeEnabled: Bool = false
 
     var body: some View {
         Form {
+            Section("小组件") {
+                Toggle("演示模式", isOn: $demoModeEnabled)
+                    .onChange(of: demoModeEnabled) { _, _ in
+                        receiver.refreshWidget()
+                    }
+                Text("开启后桌面小组件每 5 秒轮播 10 条演示航线，不影响实时接收与存储。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Section("航线查询") {
                 Picker("优先级", selection: $priorityRaw) {
                     ForEach(LookupPriority.allCases) { option in

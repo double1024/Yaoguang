@@ -15,14 +15,49 @@ struct FlightTimelineProvider: TimelineProvider {
 
     func getSnapshot(in context: Context, completion: @escaping (FlightEntry) -> Void) {
         // 画布预览用样例；桌面用真实快照，没有则回退样例。
-        let snapshot = context.isPreview ? .sample : (WidgetSharedStorage.load() ?? .sample)
+        let loaded = WidgetSharedStorage.load()
+        if let demo = Self.demoFlightEntry(at: Date()) {
+            completion(demo)
+            return
+        }
+        let snapshot = context.isPreview ? .sample : (loaded ?? .sample)
         completion(FlightEntry(date: Date(), snapshot: snapshot))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<FlightEntry>) -> Void) {
         let now = Date()
+
+        // 演示模式：固定显示香港快运 UO1800 公益航班。
+        if let demo = Self.demoFlightEntry(at: now) {
+            completion(Timeline(entries: [demo], policy: .after(now.addingTimeInterval(refreshInterval))))
+            return
+        }
+
         let entry = FlightEntry(date: now, snapshot: WidgetSharedStorage.load())
         completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(refreshInterval))))
+    }
+
+    /// 演示航班：香港快运航空 UO1800，香港环飞。
+    static func demoFlightEntry(at date: Date) -> FlightEntry? {
+        guard WidgetSharedStorage.load()?.demoMode == true else { return nil }
+        let snapshot = WidgetFlightSnapshot(
+            writtenAt: date,
+            origin: "HKG",
+            destination: "HKG",
+            airlineName: "HK Express",
+            flightNumber: "UO1800",
+            aircraftType: "A320neo",
+            manufacturer: "Airbus",
+            demoMode: true,
+            airlineLogoData: demoLogoData()
+        )
+        return FlightEntry(date: date, snapshot: snapshot)
+    }
+
+    /// 读取扩展自带的 HK Express logo。
+    static func demoLogoData() -> Data? {
+        guard let url = Bundle.main.url(forResource: "HKE", withExtension: "png") else { return nil }
+        return try? Data(contentsOf: url)
     }
 }
 

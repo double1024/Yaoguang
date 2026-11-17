@@ -113,6 +113,13 @@ final class ReceiverModel: ObservableObject {
         start()
     }
 
+    /// 设置变更后强制重写一次快照并让小组件刷新（用于演示模式开关）。
+    func refreshWidget() {
+        lastWidgetKey = ""
+        lastWidgetWrite = .distantPast
+        publishWidgetSnapshot()
+    }
+
     private func poll() {
         guard let handle else { return }
         var update = YaoguangUpdate()
@@ -371,6 +378,7 @@ final class ReceiverModel: ObservableObject {
             flightNumber: callsign,
             aircraftType: aircraftType,
             manufacturer: manufacturer,
+            demoMode: UserDefaults.standard.bool(forKey: "demoModeEnabled"),
             airlineLogoData: logoData
         ))
         if let saveError {
