@@ -1,9 +1,12 @@
 import Foundation
 import Combine
 
-struct Aircraft: Identifiable {
+/// 实时接收界面的内存状态（区别于 SwiftData 的 `Aircraft` 档案模型）。
+struct LiveAircraft: Identifiable {
     let icao24: UInt32
     var callsign: String?
+
+    // 原始字段（沿用既有 UI 展示与类型区分）
     var speedKt: Double?
     var speedKind: UInt8 = 0
     var directionDeg: Double?
@@ -15,26 +18,47 @@ struct Aircraft: Identifiable {
     var packetCount: UInt64 = 0
     var lastSeen = Date()
 
+    // 解析后的字段（只保留用于历史存储的语义：地速/航迹/气压高度）
+    var groundSpeedKt: Double?
+    var trackDeg: Double?
+    var baroAltitudeFt: Int32?
+
     var id: UInt32 { icao24 }
 }
 
 @MainActor
 final class ReceiverModel: ObservableObject {
     private let maxTrackedAircraft = 10
+    private let store: HistoryStore
+    private let resolver: FlightInfoResolver
 
-    @Published private(set) var aircraft: [Aircraft] = []
+    @Published private(set) var aircraft: [LiveAircraft] = []
     @Published private(set) var status = "Receiver not started"
     @Published private(set) var validPacketCount: UInt64 = 0
 
     private var handle: OpaquePointer?
     private var pollTimer: Timer?
-    private var aircraftByICAO: [UInt32: Aircraft] = [:]
+    private var aircraftByICAO: [UInt32: LiveAircraft] = [:]
+    private var pollTick: UInt64 = 0
+
+    // 采样与航班生命周期状态（内存）
+    private var lastSample: [UInt32: (at: Date, fingerprint: String)] = [:]
+    private var activeFlight: [UInt32: (callsign: String, id: UUID)] = [:]
+    private let sampleInterval: TimeInterval = 1.0
+    private let flightGapInterval: TimeInterval = 10 * 60
+
+    init(store: HistoryStore, resolver: FlightInfoResolver) {
+        self.store = store
+        self.resolver = resolver
+    }
 
     func start() {
         guard handle == nil else { return }
         validPacketCount = 0
         aircraftByICAO.removeAll()
         aircraft = []
+        lastSample.removeAll()
+        activeFlight.removeAll()
         guard let newHandle = yaoguang_start() else {
             status = "Unable to create receiver thread"
             return
@@ -56,6 +80,11 @@ final class ReceiverModel: ObservableObject {
             self.handle = nil
         }
         status = "Receiver stopped"
+        let now = Date()
+        for icao in activeFlight.keys {
+            closeActiveFlight(icao: icao, at: now)
+        }
+        Task { await store.flush() }
     }
 
     func reconnect() {
@@ -89,7 +118,6 @@ final class ReceiverModel: ObservableObject {
                 status = "Receiver stopped or an error occurred"
             }
         }
-
     }
 
     private func decodeCString(_ buffer: [CChar]) -> String {
@@ -99,11 +127,17 @@ final class ReceiverModel: ObservableObject {
 
     private func merge(_ update: YaoguangUpdate, callsign: String, receivedAt: Date) {
         let icao = update.icao24
-        if aircraftByICAO[icao] == nil, aircraftByICAO.count >= maxTrackedAircraft,
+        let isNew = aircraftByICAO[icao] == nil
+
+        // 淘汰最久未更新的飞机（顺带关闭其航班）
+        if isNew, aircraftByICAO.count >= maxTrackedAircraft,
            let oldestICAO = aircraftByICAO.values.min(by: { $0.lastSeen < $1.lastSeen })?.icao24 {
             aircraftByICAO.removeValue(forKey: oldestICAO)
+            closeActiveFlight(icao: oldestICAO, at: receivedAt)
+            lastSample.removeValue(forKey: oldestICAO)
         }
-        var aircraft = aircraftByICAO[icao] ?? Aircraft(icao24: icao)
+
+        var aircraft = aircraftByICAO[icao] ?? LiveAircraft(icao24: icao)
         let fields = update.fields
         aircraft.packetCount &+= 1
 
@@ -113,14 +147,23 @@ final class ReceiverModel: ObservableObject {
         if fields & UInt32(YAOGUANG_FIELD_SPEED) != 0 {
             aircraft.speedKt = update.speed_kt
             aircraft.speedKind = update.speed_kind
+            if update.speed_kind == UInt8(YAOGUANG_SPEED_GROUND) {
+                aircraft.groundSpeedKt = update.speed_kt
+            }
         }
         if fields & UInt32(YAOGUANG_FIELD_DIRECTION) != 0 {
             aircraft.directionDeg = update.direction_deg
             aircraft.directionKind = update.direction_kind
+            if update.direction_kind == UInt8(YAOGUANG_DIRECTION_TRACK) {
+                aircraft.trackDeg = update.direction_deg
+            }
         }
         if fields & UInt32(YAOGUANG_FIELD_ALTITUDE) != 0 {
             aircraft.altitudeFt = update.altitude_ft
             aircraft.altitudeKind = update.altitude_kind
+            if update.altitude_kind == UInt8(YAOGUANG_ALTITUDE_BAROMETRIC) {
+                aircraft.baroAltitudeFt = update.altitude_ft
+            }
         }
         if fields & UInt32(YAOGUANG_FIELD_VERTICAL_RATE) != 0 {
             aircraft.verticalRateFpm = update.vertical_rate_fpm
@@ -130,7 +173,89 @@ final class ReceiverModel: ObservableObject {
         }
         aircraft.lastSeen = receivedAt
         aircraftByICAO[icao] = aircraft
+
+        // 首见：触发飞机档案查询
+        if isNew {
+            let hex = Self.hexString(icao)
+            Task { await resolver.resolveAircraft(icaoHex: hex) }
+        }
+
+        // 呼号处理：航班识别 + 航线查询
+        if fields & UInt32(YAOGUANG_FIELD_CALLSIGN) != 0, !callsign.isEmpty {
+            handleCallsign(callsign, icao: icao, at: receivedAt)
+        }
+
+        // 每包收包统计
+        let hex = Self.hexString(icao)
+        Task { await store.recordPacket(icaoHex: hex, timestamp: receivedAt) }
+
+        // 采样
+        maybeSample(aircraft, receivedAt: receivedAt)
+
+        // 周期任务：每秒 flush；每 60 秒扫一次失联航班
+        pollTick &+= 1
+        if pollTick % 10 == 0 {
+            Task { await store.flush() }
+        }
+        if pollTick % 600 == 0 {
+            sweepStaleFlights(now: receivedAt)
+        }
+
         publishAircraftInRecentOrder()
+    }
+
+    private func handleCallsign(_ rawCallsign: String, icao: UInt32, at: Date) {
+        let callsign = rawCallsign.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard !callsign.isEmpty else { return }
+
+        if let existing = activeFlight[icao], existing.callsign == callsign {
+            return // 同一航班继续
+        }
+
+        if let existing = activeFlight[icao] {
+            Task { await store.closeFlight(id: existing.id, at: at) }
+        }
+
+        let flightID = UUID()
+        activeFlight[icao] = (callsign: callsign, id: flightID)
+        let hex = Self.hexString(icao)
+        Task { await store.openFlight(FlightRecord(icaoHex: hex, callsign: callsign, firstSeen: at, lastSeen: at), id: flightID) }
+        Task { await resolver.resolveRoute(callsign: callsign, flightID: flightID) }
+    }
+
+    private func maybeSample(_ aircraft: LiveAircraft, receivedAt: Date) {
+        let icao = aircraft.icao24
+        let fingerprint = Self.fingerprint(aircraft)
+
+        if let last = lastSample[icao] {
+            if receivedAt.timeIntervalSince(last.at) < sampleInterval { return }
+            if last.fingerprint == fingerprint { return }
+        }
+
+        lastSample[icao] = (at: receivedAt, fingerprint: fingerprint)
+        let snapshot = SampleSnapshot(
+            icaoHex: Self.hexString(icao),
+            timestamp: receivedAt,
+            altitudeFt: aircraft.baroAltitudeFt,
+            groundSpeedKt: aircraft.groundSpeedKt,
+            trackDeg: aircraft.trackDeg,
+            verticalRateFpm: aircraft.verticalRateFpm,
+            callsign: aircraft.callsign,
+            signalDbfs: aircraft.signalDbfs,
+            flightID: activeFlight[icao]?.id
+        )
+        Task { await store.appendSample(snapshot) }
+    }
+
+    private func sweepStaleFlights(now: Date) {
+        for (icao, aircraft) in aircraftByICAO where now.timeIntervalSince(aircraft.lastSeen) > flightGapInterval {
+            closeActiveFlight(icao: icao, at: aircraft.lastSeen)
+        }
+    }
+
+    private func closeActiveFlight(icao: UInt32, at: Date) {
+        guard let flight = activeFlight.removeValue(forKey: icao) else { return }
+        Task { await store.closeFlight(id: flight.id, at: at) }
     }
 
     private func publishAircraftInRecentOrder() {
@@ -140,4 +265,14 @@ final class ReceiverModel: ObservableObject {
         }
     }
 
+    private static func hexString(_ icao24: UInt32) -> String {
+        String(format: "%06X", icao24)
+    }
+
+    private static func fingerprint(_ aircraft: LiveAircraft) -> String {
+        "\(aircraft.baroAltitudeFt.map(String.init) ?? "-")|" +
+        "\(aircraft.groundSpeedKt.map { String(format: "%.0f", $0) } ?? "-")|" +
+        "\(aircraft.trackDeg.map { String(format: "%.0f", $0) } ?? "-")|" +
+        "\(aircraft.verticalRateFpm.map(String.init) ?? "-")"
+    }
 }

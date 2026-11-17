@@ -1,13 +1,33 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct YaoguangApp: App {
-    @StateObject private var receiver = ReceiverModel()
+    private let store: HistoryStore
+    private let resolver: FlightInfoResolver
+    @StateObject private var receiver: ReceiverModel
+
+    @MainActor
+    init() {
+        let container: ModelContainer
+        do {
+            container = try AppStorage.makeModelContainer()
+        } catch {
+            fatalError("无法初始化本地存储：\(error)")
+        }
+        let store = HistoryStore(modelContainer: container)
+        self.store = store
+        let resolver = FlightInfoResolver(store: store)
+        self.resolver = resolver
+        _receiver = StateObject(wrappedValue: ReceiverModel(store: store, resolver: resolver))
+        // 启动对账：结束上次运行遗留的 active 航班。
+        Task { await store.reconcileActiveFlights(at: Date()) }
+    }
 
     var body: some Scene {
         WindowGroup {
-            FlightListView(receiver: receiver)
-                .frame(minWidth: 760, minHeight: 460)
+            FlightListView(receiver: receiver, resolver: resolver)
+                .frame(minWidth: 700, minHeight: 440)
                 .onAppear { receiver.start() }
                 .onDisappear { receiver.stop() }
         }
@@ -16,7 +36,6 @@ struct YaoguangApp: App {
             ReceiverSettingsView(receiver: receiver)
         }
     }
-
 }
 
 struct ReceiverSettingsView: View {

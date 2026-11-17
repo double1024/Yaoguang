@@ -3,6 +3,7 @@ import AppKit
 
 struct FlightListView: View {
     @ObservedObject var receiver: ReceiverModel
+    @ObservedObject var resolver: FlightInfoResolver
 
     var body: some View {
         VStack(spacing: 0) {
@@ -15,10 +16,16 @@ struct FlightListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Table(receiver.aircraft) {
-                    TableColumn(columnTitle("Flight")) { aircraft in
-                        flightCell(aircraft)
+                    TableColumn(columnTitle("Callsign")) { aircraft in
+                        callsignCell(aircraft)
                     }
-                    .width(min: 115, ideal: 125, max: 140)
+                    .width(min: 90, ideal: 112, max: 132)
+                    .alignment(.leading)
+
+                    TableColumn(columnTitle("Route")) { aircraft in
+                        routeCell(aircraft)
+                    }
+                    .width(min: 110, ideal: 140, max: 170)
                     .alignment(.leading)
 
                     TableColumn(columnTitle("ICAO")) { aircraft in
@@ -27,37 +34,37 @@ struct FlightListView: View {
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
-                    .width(min: 65, ideal: 72, max: 80)
+                    .width(min: 58, ideal: 64, max: 72)
                     .alignment(.leading)
 
                     TableColumn(columnTitle("GS", unit: "(kt)")) { aircraft in
-                        numberCell(groundSpeed(aircraft))
+                        numberCell(aircraft.groundSpeedKt.map { String(format: "%.0f", $0) })
                     }
-                    .width(min: 68, ideal: 75, max: 85)
+                    .width(min: 58, ideal: 66, max: 74)
                     .alignment(.trailing)
 
                     TableColumn(columnTitle("TRK")) { aircraft in
-                        numberCell(track(aircraft))
+                        numberCell(aircraft.trackDeg.map { String(format: "%.0f°", $0) })
                     }
-                    .width(min: 55, ideal: 62, max: 70)
+                    .width(min: 46, ideal: 52, max: 60)
                     .alignment(.trailing)
 
                     TableColumn(columnTitle("ALT", unit: "(FL)")) { aircraft in
                         numberCell(flightLevel(aircraft))
                     }
-                    .width(min: 75, ideal: 82, max: 90)
+                    .width(min: 60, ideal: 68, max: 76)
                     .alignment(.trailing)
 
                     TableColumn(columnTitle("V/S", unit: "(m/s)")) { aircraft in
                         numberCell(verticalRate(aircraft))
                     }
-                    .width(min: 78, ideal: 85, max: 95)
+                    .width(min: 62, ideal: 70, max: 78)
                     .alignment(.trailing)
 
                     TableColumn(columnTitle("SIG", unit: "(dBFS)")) { aircraft in
                         numberCell(aircraft.signalDbfs.map { String(format: "%.1f", $0) })
                     }
-                    .width(min: 82, ideal: 90, max: 100)
+                    .width(min: 64, ideal: 72, max: 80)
                     .alignment(.trailing)
 
                     TableColumn(columnTitle("RX", unit: "(Age)")) { aircraft in
@@ -67,7 +74,7 @@ struct FlightListView: View {
                                 .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
-                    .width(min: 92, ideal: 100, max: 115)
+                    .width(min: 80, ideal: 88, max: 98)
                     .alignment(.trailing)
                 }
                 .tableStyle(.inset)
@@ -76,7 +83,8 @@ struct FlightListView: View {
             HStack(spacing: 6) {
                 Image(systemName: "dot.radiowaves.left.and.right")
                 Text(receiver.status)
-                Spacer(minLength: 0)
+                Spacer(minLength: 12)
+                apiActivityView
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -86,6 +94,26 @@ struct FlightListView: View {
         .font(.system(size: 13, design: .default))
     }
 
+    // MARK: - 数据访问
+
+    private func routeInfo(for aircraft: LiveAircraft) -> RouteInfo? {
+        guard let callsign = aircraft.callsign?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+              !callsign.isEmpty else { return nil }
+        return resolver.routes[callsign]
+    }
+
+    /// 从 ICAO 呼号中提取航班号（3 位航司码 + 数字后缀），用于图标旁紧凑显示。
+    private static func flightNumber(from callsign: String?) -> String? {
+        guard let callsign, callsign.count >= 4 else { return nil }
+        let prefix = String(callsign.prefix(3))
+        let suffix = callsign.dropFirst(3)
+        guard prefix.range(of: #"^[A-Z]{3}$"#, options: .regularExpression) != nil,
+              suffix.first?.isNumber == true else { return nil }
+        return String(suffix)
+    }
+
+    // MARK: - 单元格
+
     private func columnTitle(_ title: String, unit: String? = nil) -> Text {
         let main = Text(title).font(.system(size: 11, weight: .semibold))
         guard let unit else { return main }
@@ -94,20 +122,51 @@ struct FlightListView: View {
             .foregroundColor(.secondary)
     }
 
-    private func flightCell(_ aircraft: Aircraft) -> some View {
+    private func callsignCell(_ aircraft: LiveAircraft) -> some View {
         let callsign = aircraft.callsign?.trimmingCharacters(in: .whitespacesAndNewlines)
         let isUnknown = callsign == nil || callsign?.isEmpty == true
+        let airline = routeInfo(for: aircraft)?.airline?.name
+        let flightNumber = Self.flightNumber(from: callsign)
 
         return HStack(spacing: 6) {
             AirlineLogoView(callsign: isUnknown ? nil : callsign)
-            Text(isUnknown ? "Unknown" : callsign!)
-                .font(.system(size: 13, weight: .bold))
-                .italic(isUnknown)
-                .foregroundStyle(isUnknown ? Color.secondary : Color.primary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(isUnknown ? "Unknown" : (flightNumber ?? callsign!))
+                    .font(.system(size: 13, weight: .bold))
+                    .italic(isUnknown)
+                    .foregroundStyle(isUnknown ? Color.secondary : Color.primary)
+                    .lineLimit(1)
+                if let airline {
+                    Text(airline)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .help(isUnknown ? "Unknown" : callsign!)
+    }
+
+    @ViewBuilder
+    private func routeCell(_ aircraft: LiveAircraft) -> some View {
+        if let route = routeInfo(for: aircraft),
+           let origin = route.origin?.iataCode, let destination = route.destination?.iataCode {
+            Text("\(origin) → \(destination)")
+                .font(.system(size: 12))
+                .monospacedDigit()
+                .foregroundStyle(.primary)
+                .help(routeFullNames(route))
+        } else {
+            Text("—")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func routeFullNames(_ route: RouteInfo) -> String {
+        let origin = route.origin?.name ?? route.origin?.icaoCode ?? route.origin?.iataCode ?? "?"
+        let destination = route.destination?.name ?? route.destination?.icaoCode ?? route.destination?.iataCode ?? "?"
+        return "\(origin) → \(destination)"
     }
 
     private func numberCell(_ value: String?) -> some View {
@@ -116,29 +175,52 @@ struct FlightListView: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    private func flightLevel(_ aircraft: Aircraft) -> String? {
-        guard let altitude = aircraft.altitudeFt else { return nil }
+    private func flightLevel(_ aircraft: LiveAircraft) -> String? {
+        let altitude = aircraft.baroAltitudeFt ?? aircraft.altitudeFt
+        guard let altitude else { return nil }
         return String(format: "FL%03d", Int((Double(altitude) / 100.0).rounded()))
     }
 
-    private func groundSpeed(_ aircraft: Aircraft) -> String? {
-        guard aircraft.speedKind == UInt8(YAOGUANG_SPEED_GROUND) else { return nil }
-        return aircraft.speedKt.map { String(format: "%.0f", $0) }
-    }
-
-    private func track(_ aircraft: Aircraft) -> String? {
-        guard aircraft.directionKind == UInt8(YAOGUANG_DIRECTION_TRACK) else { return nil }
-        return aircraft.directionDeg.map { String(format: "%.0f°", $0) }
-    }
-
-    private func verticalRate(_ aircraft: Aircraft) -> String? {
+    private func verticalRate(_ aircraft: LiveAircraft) -> String? {
         guard let rate = aircraft.verticalRateFpm else { return nil }
         return String(format: "%+.1f", Double(rate) * 0.00508)
     }
 
-    private func packetAge(_ aircraft: Aircraft, now: Date) -> String {
+    private func packetAge(_ aircraft: LiveAircraft, now: Date) -> String {
         let totalSeconds = max(0, Int(now.timeIntervalSince(aircraft.lastSeen)))
         return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
+
+    /// 右下角 API 活动提示：进行中 / 成功 / 失败。
+    @ViewBuilder
+    private var apiActivityView: some View {
+        switch resolver.activity {
+        case .idle:
+            EmptyView()
+        case .loading(let message):
+            HStack(spacing: 5) {
+                ProgressView()
+                    .controlSize(.mini)
+                Text(message)
+            }
+            .lineLimit(1)
+            .truncationMode(.middle)
+        case .success(let message):
+            HStack(spacing: 5) {
+                Image(systemName: "checkmark.circle")
+                Text(message)
+            }
+            .lineLimit(1)
+            .truncationMode(.middle)
+        case .failure(let message):
+            HStack(spacing: 5) {
+                Image(systemName: "exclamationmark.triangle")
+                Text(message)
+            }
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .foregroundStyle(.orange)
+        }
     }
 }
 
